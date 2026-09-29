@@ -28,15 +28,20 @@ export const ProdutosView = () => {
     const handleCopyLink = async (product: Product) => {
         const origin = window.location.origin;
         
-        // Save full image to localStorage for same-origin preview (so checkout always shows the image)
+        // Save full image and product to localStorage for same-origin preview
         if (product.image) {
             localStorage.setItem(`checkout_img_${product.id}`, product.image);
         } else {
             localStorage.removeItem(`checkout_img_${product.id}`);
         }
+        try {
+            localStorage.setItem(`checkout_product_${product.id}`, JSON.stringify(product));
+        } catch (e) {}
 
         const queryParams: Record<string, string> = {
-            id: product.id
+            id: product.id,
+            name: product.name,
+            price: String(product.price)
         };
 
         setShorteningProductId(product.id);
@@ -61,15 +66,20 @@ export const ProdutosView = () => {
         const origin = window.location.origin;
         const newWindow = window.open('', '_blank'); // Abre imediatamente para não ser bloqueado no celular
 
-        // Save full image to localStorage for same-origin preview
+        // Save full image and product to localStorage for same-origin preview
         if (product.image) {
             localStorage.setItem(`checkout_img_${product.id}`, product.image);
         } else {
             localStorage.removeItem(`checkout_img_${product.id}`);
         }
+        try {
+            localStorage.setItem(`checkout_product_${product.id}`, JSON.stringify(product));
+        } catch (e) {}
 
         const queryParams: Record<string, string> = {
-            id: product.id
+            id: product.id,
+            name: product.name,
+            price: String(product.price)
         };
 
         const params = new URLSearchParams(queryParams);

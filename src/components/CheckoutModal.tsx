@@ -145,8 +145,24 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                         method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
                     })
                 }).catch(err => console.warn('Webhook dispatch failed:', err));
+
+                fetch('/api/finalize-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionId: currentTxId,
+                        phone: sanitizedPaymentPhone,
+                        amount: product.price,
+                        reference: reference,
+                        customerName: name || 'Cliente',
+                        product_id: product.id,
+                        product_name: product.name,
+                        merchant_user_email: product.user_email || '',
+                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
+                    })
+                }).catch(err => console.warn('Finalize payment dispatch failed:', err));
             } catch (e) {
-                console.warn('Failed to dispatch webhook:', e);
+                console.warn('Failed to dispatch webhook / finalize-payment:', e);
             }
 
             // Disparar os Pixels de conversão (Global e/ou Produto)
@@ -487,45 +503,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                                         </AnimatePresence>
                                     </div>
 
-                                    {/* e-Mola */}
-                                    <div
-                                        onClick={() => setMethod('emola')}
-                                        className={cn(
-                                            "rounded-xl border transition-all cursor-pointer overflow-hidden",
-                                            method === 'emola' ? "border-orange-500 ring-1 ring-orange-500 bg-orange-50/10" : "border-slate-200 hover:border-slate-300 bg-white"
-                                        )}
-                                    >
-                                        <div className="p-4 flex items-center gap-3">
-                                            <div className={cn(
-                                                "h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all",
-                                                method === 'emola' ? "border-orange-500" : "border-slate-300"
-                                            )}>
-                                                {method === 'emola' && <div className="h-2 w-2 rounded-full bg-orange-500" />}
-                                            </div>
-                                            <div className="h-8 w-8 p-0.5 bg-white rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden">
-                                                <img src="/emola_logo.png" alt="e-Mola" className="w-full h-full object-cover" />
-                                            </div>
-                                            <span className="text-xs font-black text-slate-900  tracking-tight">e-Mola</span>
-                                        </div>
-                                        <AnimatePresence>
-                                            {method === 'emola' && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    className="px-4 pb-4 space-y-2"
-                                                >
-                                                    <label className="text-[10px] font-black text-slate-500  tracking-widest leading-none">Número de celular*</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="87 xxx xxxx"
-                                                        value={paymentPhone}
-                                                        onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
-                                                        className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-base focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300"
-                                                    />
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
+
                                 </div>
                             </section>
                         </div>

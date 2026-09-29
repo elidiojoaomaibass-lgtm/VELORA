@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
 import { cn } from '../lib/utils';
-import { useTransactionsStore } from '../lib/store';
+import { useTransactionsStore, mapSupabaseProduct } from '../lib/store';
 import { supabase } from '../lib/supabase';
 import { E2Payments } from '../lib/e2payments';
 
@@ -31,10 +31,25 @@ export const CheckoutPage = () => {
     // Parse product info from URL
     const searchParams = new URLSearchParams(window.location.search);
     const rawPrice = Number(searchParams.get('price'));
-    const productId = searchParams.get('id') || 'PRD-MOCK';
+    const productId = searchParams.get('id') || searchParams.get('product_id') || 'PRD-MOCK';
     const enableCountdown = searchParams.get('enableCountdown') === 'true';
     const enableScarcity = searchParams.get('enableScarcityNotification') === 'true';
     const barColor = searchParams.get('barColor');
+
+    // Helper to get fallback from localStorage velora_products or velora_products_offline
+    const getLocalProductFallback = (id: string) => {
+        try {
+            const raw = localStorage.getItem('velora_products') || localStorage.getItem('velora_products_offline');
+            if (raw) {
+                const list = JSON.parse(raw);
+                if (Array.isArray(list)) {
+                    const found = list.find((p: any) => String(p.id) === String(id));
+                    if (found) return found;
+                }
+            }
+        } catch (e) {}
+        return null;
+    };
 
     // Load image: prioritize stored, then URL param, then fetch from Supabase if needed
     let storedImage = localStorage.getItem(`checkout_img_${productId}`) || '';
@@ -50,7 +65,8 @@ export const CheckoutPage = () => {
     const [dbProduct, setDbProduct] = useState<any>(() => {
         try {
             const cached = localStorage.getItem(`checkout_product_${productId}`);
-            return cached ? JSON.parse(cached) : null;
+            if (cached) return JSON.parse(cached);
+            return getLocalProductFallback(productId);
         } catch {
             return null;
         }
@@ -58,7 +74,8 @@ export const CheckoutPage = () => {
     const [loadingProduct, setLoadingProduct] = useState(() => {
         try {
             const cached = localStorage.getItem(`checkout_product_${productId}`);
-            return !cached;
+            const localFallback = getLocalProductFallback(productId);
+            return !cached && !localFallback && isNaN(rawPrice);
         } catch {
             return true;
         }
@@ -67,34 +84,52 @@ export const CheckoutPage = () => {
     // Fetch product details from Supabase
     const fetchProduct = async () => {
         const cached = localStorage.getItem(`checkout_product_${productId}`);
-        if (!cached) {
+        const localFallback = getLocalProductFallback(productId);
+        if (!cached && !localFallback && isNaN(rawPrice)) {
             setLoadingProduct(true);
         }
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', productId)
-            .single();
-        if (error) {
-            console.error('Error fetching product', error);
-        } else {
-            setDbProduct(data);
-            try {
-                localStorage.setItem(`checkout_product_${productId}`, JSON.stringify(data));
-            } catch (e) {
-                console.error('Error saving to localStorage', e);
-            }
-            
-            // Initializar e disparar PageView
-            import('../lib/pixel').then(({ initFacebookPixel, trackFacebookEvent, trackTiktokEvent }) => {
-                if (data && data.pixel) {
-                    initFacebookPixel(data.pixel);
+
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('id', productId)
+                .single();
+
+            if (error) {
+                console.warn('Erro ao buscar produto do Supabase:', error);
+                if (localFallback) {
+                    setDbProduct(localFallback);
                 }
-                trackFacebookEvent('PageView');
-                trackTiktokEvent('ViewContent', { content_name: data ? data.name : 'Checkout' });
-            });
+            } else if (data) {
+                const mapped = mapSupabaseProduct(data);
+                setDbProduct(mapped);
+                try {
+                    localStorage.setItem(`checkout_product_${productId}`, JSON.stringify(mapped));
+                    if (mapped.image) {
+                        localStorage.setItem(`checkout_img_${productId}`, mapped.image);
+                    }
+                } catch (e) {
+                    console.error('Error saving to localStorage', e);
+                }
+                
+                // Initializar e disparar PageView
+                import('../lib/pixel').then(({ initFacebookPixel, trackFacebookEvent, trackTiktokEvent }) => {
+                    if (mapped && mapped.pixel) {
+                        initFacebookPixel(mapped.pixel);
+                    }
+                    trackFacebookEvent('PageView');
+                    trackTiktokEvent('ViewContent', { content_name: mapped ? mapped.name : 'Checkout' });
+                });
+            }
+        } catch (err) {
+            console.warn('Falha de rede ao buscar produto:', err);
+            if (localFallback) {
+                setDbProduct(localFallback);
+            }
+        } finally {
+            setLoadingProduct(false);
         }
-        setLoadingProduct(false);
     };
 
     // Call fetchProduct when component mounts or productId changes
@@ -102,15 +137,23 @@ export const CheckoutPage = () => {
         fetchProduct();
     }, [productId]);
 
+    const dbPrice = dbProduct?.price !== undefined && dbProduct?.price !== null
+        ? Number(dbProduct.price)
+        : null;
+
+    const finalPrice = dbPrice !== null && !isNaN(dbPrice)
+        ? dbPrice
+        : (!isNaN(rawPrice) && rawPrice > 0 ? rawPrice : 0);
+
     const product = {
         id: productId,
         name: dbProduct?.name || searchParams.get('name') || 'Produto sem Nome',
-        price: dbProduct?.price !== undefined ? dbProduct.price : (isNaN(rawPrice) ? 0 : rawPrice),
+        price: finalPrice,
         image: dbProduct?.image || productImage,
         deliveryLink: dbProduct?.deliveryLink || searchParams.get('deliveryLink') || '',
         user_email: dbProduct?.user_email || searchParams.get('user_email') || '',
         enableCountdown: dbProduct?.enableCountdown ?? enableCountdown,
-        enableScarcityNotification: dbProduct?.enableScarcity ?? enableScarcity,
+        enableScarcityNotification: dbProduct?.enableScarcityNotification ?? dbProduct?.enableScarcity ?? enableScarcity,
         barColor: dbProduct?.barColor || barColor
     };
 
@@ -201,7 +244,7 @@ export const CheckoutPage = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        transactionId: result.transactionId,
+                        transactionId: currentTxId,
                         phone: sanitizedPaymentPhone,
                         amount: product.price,
                         reference: reference,
@@ -464,64 +507,7 @@ export const CheckoutPage = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* e-Mola Option */}
-                                <div
-                                    onClick={() => {
-                                        if (method !== 'emola') {
-                                            setMethod('emola');
-                                            setPaymentPhone('');
-                                        }
-                                    }}
-                                    className={cn(
-                                        "rounded-2xl border-2 p-4 cursor-pointer transition-all relative overflow-hidden space-y-4",
-                                        method === 'emola' ? "border-orange-500 bg-orange-50/5 shadow-md shadow-orange-500/5" : "border-slate-100 hover:border-slate-200 bg-white"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 p-1 bg-white rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                                <img src="/emola_logo.png" alt="e-Mola" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div>
-                                                <h4 className="text-sm font-black text-slate-950  tracking-wider">e-Mola</h4>
-                                            </div>
-                                        </div>
-                                        <div className={cn(
-                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                            method === 'emola' ? "border-orange-500" : "border-slate-300"
-                                        )}>
-                                            {method === 'emola' && <div className="h-2.5 w-2.5 rounded-full bg-orange-500" />}
-                                        </div>
-                                    </div>
 
-                                    {/* e-Mola Wallet Input inside card */}
-                                    <AnimatePresence>
-                                        {method === 'emola' && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                className="space-y-2 pt-3 border-t border-orange-500/10 cursor-default"
-                                                onClick={(e) => e.stopPropagation()} // Prevent card deselection/toggle click
-                                            >
-                                                <div className="flex overflow-hidden">
-                                                    <div className="h-12 px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-600 gap-1.5 shrink-0">
-                                                        <span className="text-[10px] opacity-60  font-black">MZ</span> +258
-                                                    </div>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="86 xxx xxxx / 87 xxx xxxx"
-                                                        value={paymentPhone}
-                                                        onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
-                                                        className="flex-1 h-12 px-4 rounded-r-xl border border-slate-200 bg-white text-base font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
-                                                        required={method === 'emola'}
-                                                    />
-                                                </div>
-                                                <span className="text-[10px] text-slate-400 font-medium block">Introduza o seu PIN de segurança no telemóvel quando solicitado.</span>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
                             </div>
                         </div>
 

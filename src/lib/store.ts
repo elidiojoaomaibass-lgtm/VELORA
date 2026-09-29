@@ -94,7 +94,7 @@ export interface Product {
     createdAt: string;
 }
 
-const mapSupabaseProduct = (row: any): Product => ({
+export const mapSupabaseProduct = (row: any): Product => ({
     id: String(row.id || crypto.randomUUID()),
     name: row.name || 'Produto sem nome',
     type: (row.type as ProductType) || 'Digital',
@@ -105,19 +105,45 @@ const mapSupabaseProduct = (row: any): Product => ({
     status: (row.status as Product['status']) || 'Ativo',
     description: row.description || '',
     phone: row.phone || '',
-    salesLink: row.salesLink || row.saleslink || '',
+    salesLink: row.saleslink || row.salesLink || '',
     pixel: row.pixel || '',
-    isMarketplaceEnabled: Boolean(row.isMarketplaceEnabled ?? row.ismarketplaceenabled ?? true),
+    isMarketplaceEnabled: Boolean(row.ismarketplaceenabled ?? row.isMarketplaceEnabled ?? true),
     commission: Number(row.commission) || 0,
-    affiliationType: (row.affiliationType || row.affiliationtype || 'Automatica') as Product['affiliationType'],
+    affiliationType: (row.affiliationtype || row.affiliationType || 'Automatica') as Product['affiliationType'],
     image: row.image || '',
-    deliveryLink: row.deliveryLink || row.deliverylink || '',
-    enableCountdown: Boolean(row.enableCountdown ?? row.enablecountdown),
-    enableScarcity: Boolean(row.enableScarcity ?? row.enablescarcity),
-    enableScarcityNotification: Boolean(row.enableScarcityNotification ?? row.enablescarcitynotification),
-    barColor: row.barColor || row.barcolor || '#007BFF',
+    deliveryLink: row.deliverylink || row.deliveryLink || '',
+    enableCountdown: Boolean(row.enablecountdown ?? row.enableCountdown),
+    enableScarcity: Boolean(row.enablescarcity ?? row.enableScarcity),
+    enableScarcityNotification: Boolean(row.enablescarcitynotification ?? row.enableScarcityNotification ?? row.enablescarcity ?? row.enableScarcity),
+    barColor: row.barcolor || row.barColor || '#007BFF',
     user_email: row.user_email || '',
-    createdAt: row.createdAt || row.createdat || row.created_at || new Date().toISOString()
+    createdAt: row.createdat || row.createdAt || row.created_at || new Date().toISOString()
+});
+
+export const formatProductForSupabase = (p: Product, userEmail?: string) => ({
+    id: p.id,
+    name: p.name,
+    type: p.type || 'Digital',
+    category: p.category,
+    price: Number(p.price) || 0,
+    sales: Number(p.sales) || 0,
+    revenue: Number(p.revenue) || 0,
+    status: p.status || 'Ativo',
+    description: p.description || '',
+    phone: p.phone || '',
+    saleslink: p.salesLink || '',
+    pixel: p.pixel || '',
+    ismarketplaceenabled: Boolean(p.isMarketplaceEnabled ?? true),
+    commission: Number(p.commission) || 0,
+    affiliationtype: p.affiliationType || 'Automatica',
+    image: p.image || '',
+    deliverylink: p.deliveryLink || '',
+    enablecountdown: Boolean(p.enableCountdown),
+    enablescarcity: Boolean(p.enableScarcity || p.enableScarcityNotification),
+    enablescarcitynotification: Boolean(p.enableScarcityNotification || p.enableScarcity),
+    barcolor: p.barColor || '#007BFF',
+    user_email: p.user_email || userEmail || '',
+    createdat: p.createdAt || new Date().toISOString()
 });
 
 const getInitialProducts = async (): Promise<Product[]> => {
@@ -163,6 +189,11 @@ const getInitialProducts = async (): Promise<Product[]> => {
             localProducts.forEach(lp => {
                 if (!remoteIds.has(lp.id)) {
                     merged.push(lp);
+                    // Sync unpushed local products to Supabase
+                    try {
+                        const payload = formatProductForSupabase(lp, lp.user_email || userEmail);
+                        supabase.from('products').upsert(payload, { onConflict: 'id' }).then(() => {});
+                    } catch (e) {}
                 }
             });
 
@@ -215,6 +246,7 @@ export const useProductsStore = () => {
         const userEmail = await getActiveUserEmail();
         const completeProduct: Product = {
             ...product,
+            price: Number(product.price) || 0,
             user_email: userEmail,
             createdAt: product.createdAt || new Date().toISOString()
         };
@@ -223,6 +255,14 @@ export const useProductsStore = () => {
         const updatedList = [completeProduct, ...globalProducts.filter(p => p.id !== completeProduct.id)];
         updateProducts(updatedList);
 
+        // Preload checkout cache for immediate preview
+        try {
+            localStorage.setItem(`checkout_product_${completeProduct.id}`, JSON.stringify(completeProduct));
+            if (completeProduct.image) {
+                localStorage.setItem(`checkout_img_${completeProduct.id}`, completeProduct.image);
+            }
+        } catch (e) {}
+
         sendLocalNotification('📦 Novo Produto Salvo!', {
             body: `O produto "${product.name}" foi criado e salvo com sucesso.`,
             icon: '/logo.png'
@@ -230,31 +270,7 @@ export const useProductsStore = () => {
 
         // 2. Persist to Supabase in background
         try {
-            const dbPayload = {
-                id: completeProduct.id,
-                name: completeProduct.name,
-                type: completeProduct.type || 'Digital',
-                category: completeProduct.category,
-                price: Number(completeProduct.price) || 0,
-                sales: Number(completeProduct.sales) || 0,
-                revenue: Number(completeProduct.revenue) || 0,
-                status: completeProduct.status || 'Ativo',
-                description: completeProduct.description || '',
-                phone: completeProduct.phone || '',
-                salesLink: completeProduct.salesLink || '',
-                pixel: completeProduct.pixel || '',
-                isMarketplaceEnabled: Boolean(completeProduct.isMarketplaceEnabled),
-                commission: Number(completeProduct.commission) || 0,
-                affiliationType: completeProduct.affiliationType || 'Automatica',
-                image: completeProduct.image || '',
-                deliveryLink: completeProduct.deliveryLink || '',
-                enableCountdown: Boolean(completeProduct.enableCountdown),
-                enableScarcity: Boolean(completeProduct.enableScarcity),
-                enableScarcityNotification: Boolean(completeProduct.enableScarcityNotification),
-                barColor: completeProduct.barColor || '#007BFF',
-                user_email: userEmail,
-                createdat: completeProduct.createdAt
-            };
+            const dbPayload = formatProductForSupabase(completeProduct, userEmail);
 
             const { error } = await supabase.from('products').upsert(dbPayload, { onConflict: 'id' });
             if (error) {
@@ -277,6 +293,10 @@ export const useProductsStore = () => {
     const deleteProduct = async (id: string) => {
         // Atualiza imediatamente local
         updateProducts(globalProducts.filter(p => p.id !== id));
+        try {
+            localStorage.removeItem(`checkout_product_${id}`);
+            localStorage.removeItem(`checkout_img_${id}`);
+        } catch (e) {}
         toast.success('Produto removido com sucesso!');
 
         // Remove do Supabase de forma assíncrona
@@ -293,11 +313,20 @@ export const useProductsStore = () => {
         const userEmail = await getActiveUserEmail();
         const completeProduct: Product = {
             ...updatedProduct,
+            price: Number(updatedProduct.price) || 0,
             user_email: updatedProduct.user_email || userEmail
         };
 
         // 1. Atualização imediata local
         updateProducts(globalProducts.map(p => (p.id === completeProduct.id ? completeProduct : p)));
+
+        // Update checkout cache so any checkout opened or refreshed immediately reflects the new price & details
+        try {
+            localStorage.setItem(`checkout_product_${completeProduct.id}`, JSON.stringify(completeProduct));
+            if (completeProduct.image) {
+                localStorage.setItem(`checkout_img_${completeProduct.id}`, completeProduct.image);
+            }
+        } catch (e) {}
 
         if (oldProduct && oldProduct.status !== 'Ativo' && completeProduct.status === 'Ativo') {
             sendLocalNotification('✅ Produto Aprovado!', {
@@ -310,32 +339,12 @@ export const useProductsStore = () => {
 
         // 2. Sincroniza no Supabase
         try {
-            const dbPayload = {
-                id: completeProduct.id,
-                name: completeProduct.name,
-                type: completeProduct.type || 'Digital',
-                category: completeProduct.category,
-                price: Number(completeProduct.price) || 0,
-                sales: Number(completeProduct.sales) || 0,
-                revenue: Number(completeProduct.revenue) || 0,
-                status: completeProduct.status || 'Ativo',
-                description: completeProduct.description || '',
-                phone: completeProduct.phone || '',
-                salesLink: completeProduct.salesLink || '',
-                pixel: completeProduct.pixel || '',
-                isMarketplaceEnabled: Boolean(completeProduct.isMarketplaceEnabled),
-                commission: Number(completeProduct.commission) || 0,
-                affiliationType: completeProduct.affiliationType || 'Automatica',
-                image: completeProduct.image || '',
-                deliveryLink: completeProduct.deliveryLink || '',
-                enableCountdown: Boolean(completeProduct.enableCountdown),
-                enableScarcity: Boolean(completeProduct.enableScarcity),
-                enableScarcityNotification: Boolean(completeProduct.enableScarcityNotification),
-                barColor: completeProduct.barColor || '#007BFF',
-                user_email: completeProduct.user_email || userEmail
-            };
+            const dbPayload = formatProductForSupabase(completeProduct, completeProduct.user_email || userEmail);
 
-            await supabase.from('products').upsert(dbPayload, { onConflict: 'id' });
+            const { error } = await supabase.from('products').upsert(dbPayload, { onConflict: 'id' });
+            if (error) {
+                console.warn('Erro ao atualizar produto no Supabase:', error);
+            }
 
             if (completeProduct.image) {
                 await supabase.from('product_images').upsert({
