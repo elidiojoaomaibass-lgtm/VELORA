@@ -9,6 +9,7 @@ import {
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useTransactionsStore } from '../lib/store';
+import { supabase } from '../lib/supabase';
 
 interface KwikPayBalance {
     wallet_uuid: string;
@@ -43,7 +44,7 @@ export const SaqueView = () => {
 
     // ── Estado do Saque B2C KwikPay ────────────────────────────────────────────────
     const [b2cAmount, setB2cAmount] = useState('');
-    const [b2cPhone, setB2cPhone] = useState('856195186'); // Padrão: João Maibass
+    const [b2cPhone, setB2cPhone] = useState(''); // Carregado do Supabase
     const [b2cRef, setB2cRef] = useState(`B2C_${Date.now().toString().slice(-6)}`);
     const [b2cLoading, setB2cLoading] = useState(false);
     const [b2cSuccessData, setB2cSuccessData] = useState<any>(null);
@@ -59,7 +60,7 @@ export const SaqueView = () => {
 
     // ── Estado do Saque da Loja (Legado / Saldo Acumulado) ─────────────────────────
     const [shopAmount, setShopAmount] = useState('');
-    const [shopPhone, setShopPhone] = useState('856195186');
+    const [shopPhone, setShopPhone] = useState('');
     const [shopMethod, setShopMethod] = useState<'M-Pesa' | 'e-Mola'>('M-Pesa');
     const [shopLoading, setShopLoading] = useState(false);
     const [showShopSuccess, setShowShopSuccess] = useState(false);
@@ -103,6 +104,46 @@ export const SaqueView = () => {
             'e-Mola': withdrawalHistory.some(w => w.method === 'e-Mola' && w.status === 'Pendente'),
         });
     }, [transactions]);
+
+    // ── Carregar número de telemóvel do utilizador do Supabase ─────────────────────
+    useEffect(() => {
+        const loadUserPhone = async () => {
+            try {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const user = sessionData?.session?.user;
+                if (!user) return;
+
+                // Prioridade 1: user_settings (número B2C guardado explicitamente)
+                const { data: settings } = await supabase
+                    .from('user_settings')
+                    .select('phone_number')
+                    .eq('user_email', user.email)
+                    .maybeSingle();
+
+                if (settings?.phone_number) {
+                    const clean = String(settings.phone_number).replace(/\D/g, '').slice(-9);
+                    if (clean.length === 9) {
+                        setB2cPhone(clean);
+                        setShopPhone(clean);
+                        return;
+                    }
+                }
+
+                // Prioridade 2: user_metadata
+                const metaPhone = user.user_metadata?.phone_number;
+                if (metaPhone) {
+                    const clean = String(metaPhone).replace(/\D/g, '').slice(-9);
+                    if (clean.length === 9) {
+                        setB2cPhone(clean);
+                        setShopPhone(clean);
+                    }
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar número do utilizador:', e);
+            }
+        };
+        loadUserPhone();
+    }, []);
 
     // ── Função: Buscar Saldo KwikPay ───────────────────────────────────────────────
     const fetchKwikPayBalance = async () => {
@@ -406,7 +447,7 @@ export const SaqueView = () => {
                     </div>
                 </div>
 
-                {/* Beneficiário Ativo (João Maibass) */}
+                {/* Beneficiário Activo (dinâmico do BD) */}
                 <div className="rounded-3xl p-6 bg-white dark:bg-brand-900 border border-violet-100 dark:border-brand-800 shadow-sm flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-2">
@@ -417,9 +458,11 @@ export const SaqueView = () => {
                                 M-Pesa Direto
                             </span>
                         </div>
-                        <p className="text-base font-black text-slate-900 dark:text-white">João Maibass</p>
+                        <p className="text-base font-black text-slate-900 dark:text-white">
+                            {b2cPhone ? 'Meu Número' : <span className="text-slate-400 text-sm font-medium italic">A carregar...</span>}
+                        </p>
                         <p className="text-lg font-mono font-bold text-violet-600 dark:text-violet-400 mt-0.5">
-                            856195186
+                            {b2cPhone || '—'}
                         </p>
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-brand-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-brand-300">
@@ -460,13 +503,9 @@ export const SaqueView = () => {
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                             Número M-Pesa (9 Dígitos)
                                         </label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setB2cPhone('856195186')}
-                                            className="text-[9px] font-black text-violet-600 dark:text-violet-400 hover:underline"
-                                        >
-                                            Meu Número (856195186)
-                                        </button>
+                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400" title="Número carregado automaticamente do perfil">
+                                            {b2cPhone ? `Meu Número (${b2cPhone})` : 'Sem número guardado'}
+                                        </span>
                                     </div>
                                     <div className="relative group">
                                         <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
