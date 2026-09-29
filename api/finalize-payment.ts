@@ -8,6 +8,10 @@ const supabaseServiceKey =
   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
   supabaseAnonKey;
 
+const kwikpayClientId = process.env.VITE_KWIKPAY_CLIENT_ID || process.env.VITE_E2_CLIENT_ID || process.env.KWIKPAY_CLIENT_ID || process.env.E2_CLIENT_ID || '11';
+const kwikpayClientSecret = process.env.VITE_KWIKPAY_CLIENT_SECRET || process.env.VITE_E2_CLIENT_SECRET || process.env.KWIKPAY_CLIENT_SECRET || process.env.E2_CLIENT_SECRET || 'ZnET0WBSivZ7AGVJbG95N0xqirzCA7krS36ZAB7Q';
+const kwikpayWalletUuid = process.env.VITE_KWIKPAY_WALLET_ID || process.env.VITE_E2_WALLET_MPESA || process.env.KWIKPAY_WALLET_ID || process.env.E2_WALLET_MPESA || '891ae33d-664c-4715-abb1-008688662a03';
+
 let supabase: any = null;
 if (supabaseUrl && supabaseAnonKey) {
   try { supabase = createClient(supabaseUrl, supabaseAnonKey); } catch {}
@@ -64,6 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let supabaseWebhookUrl = '';
     let supabaseWebhookEvents = '{}';
     let supabaseLowtrackToken = '';
+    let merchantMpesaPhone = '';  // will be resolved from user metadata
 
     if (dbClient) {
         // If email not provided, try to find it via product
@@ -97,6 +102,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
             } catch (e) {
                 console.warn('Erro ao carregar user_settings:', e);
+            }
+
+            // Fetch merchant phone number from user_settings (populated when merchant saves profile)
+            try {
+                const { data: phoneSetting } = await dbClient
+                    .from('user_settings')
+                    .select('phone_number')
+                    .eq('user_email', finalMerchantEmail)
+                    .single();
+                if (phoneSetting?.phone_number) {
+                    let cleaned = String(phoneSetting.phone_number).replace(/\D/g, '');
+                    if (cleaned.startsWith('258') && cleaned.length > 9) cleaned = cleaned.substring(3);
+                    merchantMpesaPhone = cleaned.slice(-9);
+                    console.log(`📞 Telefone M-Pesa do merchant: ${merchantMpesaPhone}`);
+                } else {
+                    console.warn(`⚠️ Nenhum número de telemóvel em user_settings para: ${finalMerchantEmail}`);
+                }
+            } catch (phoneErr: any) {
+                console.warn('Erro ao obter phone_number do merchant:', phoneErr.message);
             }
         }
     }
@@ -249,6 +273,87 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
                 } catch (err: any) {
                     console.error('Erro ao enviar FCM Push Notification:', err.message || err);
+                }
+            })());
+        }
+
+        // 5. B2C Automático para o MERCHANT (vendedor do produto)
+        if (kwikpayClientId && kwikpayClientSecret && kwikpayWalletUuid) {
+            notifications.push((async () => {
+                try {
+                    // 5.0 Verificar se temos o telefone do merchant
+                    const targetPhone = merchantMpesaPhone;
+                    if (!targetPhone) {
+                        console.warn(`⚠️ B2C automático cancelado: número de telemóvel do merchant (${finalMerchantEmail}) não encontrado no perfil. Configure o número nas Definições da conta.`);
+                        return;
+                    }
+
+                    // 5.1 Obter token OAuth
+                    const tokenRes = await fetch('https://kwikpay.web.tr/oauth/token', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            grant_type: 'client_credentials',
+                            client_id: kwikpayClientId,
+                            client_secret: kwikpayClientSecret
+                        })
+                    });
+                    
+                    if (!tokenRes.ok) throw new Error('Falha ao obter token B2C');
+                    const { access_token } = await tokenRes.json();
+
+                    // 5.2 Cortar taxas da plataforma (7% com mínimo de 10 MZN)
+                    const fee = Math.max(amountNum * 0.07, 10);
+                    const b2cAmount = Math.floor(amountNum - fee);
+
+                    console.log(`💸 B2C automático: ${amountNum} MZN - ${fee} MZN taxa = ${b2cAmount} MZN para merchant ${targetPhone}`);
+
+                    // Só enviar se o valor líquido for no mínimo 1 MZN
+                    if (b2cAmount >= 1) {
+                        const b2cRes = await fetch('https://kwikpay.web.tr/api/v1/b2c/mpesa-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${access_token}`,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                wallet_uuid: kwikpayWalletUuid,
+                                amount: b2cAmount,
+                                phone: targetPhone, // Número dinâmico do merchant
+                                reference: `B2C_${finalTxId}`.substring(0, 20)
+                            })
+                        });
+                        
+                        const b2cData = await b2cRes.json();
+                        console.log(`Auto B2C Result (merchant: ${targetPhone}):`, b2cData);
+                        
+                        // Registar saque automático no DB
+                        if (supabase && b2cData.success) {
+                            await supabase.from('transactions').insert([{
+                                id: `B2C_${Date.now()}`,
+                                type: 'withdrawal', 
+                                amount: b2cAmount, 
+                                phone: targetPhone, 
+                                method: 'M-Pesa',
+                                status: 'Concluído', 
+                                reference: `B2C_${finalTxId}`.substring(0, 20),
+                                description: `Saque B2C Automático - ${finalTxId}`,
+                                customerName: finalMerchantEmail || 'Merchant',
+                                customerEmail: finalMerchantEmail || 'auto@b2c',
+                                createdat: new Date().toISOString(),
+                            }]).catch(() => {});
+                        } else if (supabase && !b2cData.success) {
+                            console.error(`❌ B2C falhou para merchant ${targetPhone}:`, b2cData);
+                        }
+                    } else {
+                        console.log(`Valor muito baixo para B2C após corte de taxas: ${b2cAmount} MZN (pagamento: ${amountNum} MZN, taxa: ${fee} MZN)`);
+                    }
+                } catch (b2cErr: any) {
+                    console.error('Erro no Auto B2C:', b2cErr.message || b2cErr);
                 }
             })());
         }

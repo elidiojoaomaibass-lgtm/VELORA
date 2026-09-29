@@ -86,6 +86,14 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
                 // Real Supabase update to the database
                 const { error } = await supabase.auth.updateUser({ data: metadata });
                 if (error) throw error;
+
+                // Also persist phone_number to user_settings so backend B2C can read it
+                const email = sessionData.session.user.email;
+                if (email && phoneNumber) {
+                    await supabase
+                        .from('user_settings')
+                        .upsert({ user_email: email, phone_number: phoneNumber }, { onConflict: 'user_email' });
+                }
             } else {
                 // Fallback to fake session
                 const fake = localStorage.getItem('velora_fake_session');
@@ -112,6 +120,7 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
             setLoading(false);
         }
     };
+
 
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
