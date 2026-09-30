@@ -77,24 +77,54 @@ export class E2Payments {
         }
         cleanPhone = cleanPhone.slice(-9);
 
-        // Always use the robust serverless endpoint instead of the edge proxy
-        // The serverless function now has maxDuration 60s configured.
-        console.log('Using /api/kwikpay serverless endpoint for payment...');
-        const response = await fetch('/api/kwikpay', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                method,
-                walletId,
-                amount: Number(amount),
-                phone: cleanPhone,
-                reference: cleanRef
-            })
-        });
+        // Always use the robust serverless endpoint instead of the edge proxy in production.
+        // The serverless function has maxDuration 60s configured (only works in Pro).
+        // For local development (Vite), we must use the Vite proxy.
+        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        
+        let response;
+        if (isLocalhost) {
+            console.log('Using Vite /api/kwikpay-proxy for local development...');
+            // First ensure we have a token
+            const token = await this.authenticate();
+            response = await fetch(`/api/kwikpay-proxy/api/v1/c2b/${method}-payment/${walletId}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    amount: Number(amount),
+                    phone: cleanPhone,
+                    reference: cleanRef
+                })
+            });
+        } else {
+            console.log('Using /api/kwikpay serverless endpoint for payment...');
+            response = await fetch('/api/kwikpay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    method,
+                    walletId,
+                    amount: Number(amount),
+                    phone: cleanPhone,
+                    reference: cleanRef
+                })
+            });
+        }
 
         const data = await response.json().catch(() => null);
 
         if (!response.ok || (data && data.success === false)) {
+            // WORKAROUND VERCEL PLANO GRÁTIS (10s timeout):
+            // Se o Vercel cortar a ligação por demorar mais de 10s (erro 504 ou 500 sem resposta do KwikPay),
+            // assumimos que o pedido M-Pesa foi disparado com sucesso e está a aguardar o PIN no telemóvel.
+            // O webhook atualizará o estado via Supabase Realtime.
+            if (response.status === 504 || (response.status === 500 && !isLocalhost)) {
+                console.log('Vercel timeout atingido. Assumindo pagamento como pendente (aguardando webhook)...');
+                return { success: true, pending: true, message: 'A aguardar confirmação no telemóvel...' };
+            }
             throw new Error(formatGatewayError(data));
         }
 
