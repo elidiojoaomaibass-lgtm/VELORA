@@ -2,7 +2,7 @@ import {
     LayoutDashboard, ShoppingBag, Users,
     Settings,
     Gift, Layers, ShoppingCart, Wallet,
-    Wrench, Moon, Sun, Banknote
+    Wrench, Moon, Sun, Banknote, Cpu
 } from "lucide-react";
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -11,7 +11,7 @@ export type ViewType =
     | "ThankYou"
     | "Dashboard" | "Vendas" | "Produtos" | "Afiliados"
     | "Mercado" | "Pagamentos" | "Levantamentos" | "Premiações" | "Integrações"
-    | "Análise" | "Configurações" | "Documentação";
+    | "Análise" | "Configurações" | "Documentação" | "B2C Config";
 
 interface SidebarProps {
     activeView: ViewType;
@@ -45,6 +45,7 @@ const menuGroups = [
         label: "Finanças",
         items: [
             { icon: Banknote, label: "Levantamentos" as ViewType },
+            { icon: Cpu, label: "B2C Config" as ViewType },
         ],
     },
     {

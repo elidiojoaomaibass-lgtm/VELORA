@@ -45,7 +45,7 @@ function App() {
     if (saved && lastActive) {
       const elapsed = Date.now() - parseInt(lastActive, 10);
       if (elapsed < SESSION_TIMEOUT_MS) {
-        const validViews = ["ThankYou", "Dashboard", "Vendas", "Produtos", "Afiliados", "Mercado", "Pagamentos", "Levantamentos", "Premiações", "Integrações", "Configurações", "Documentação"];
+        const validViews = ["ThankYou", "Dashboard", "Vendas", "Produtos", "Afiliados", "Mercado", "Pagamentos", "Levantamentos", "Premiações", "Integrações", "Configurações", "Documentação", "B2C Config"];
         if (validViews.includes(saved)) return saved as ViewType;
       }
     }
@@ -438,6 +438,7 @@ function App() {
           {activeView === "Análise" && <Views.Análise />}
           {activeView === "Configurações" && <Views.Configuracoes onLogout={handleLogout} />}
           {activeView === "Documentação" && <Views.Documentacao />}
+          {activeView === "B2C Config" && <Views.B2CConfig />}
         </div>
       </main>
 

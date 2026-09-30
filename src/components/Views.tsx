@@ -9,6 +9,7 @@ import { PremiacoesView } from './PremiacoesView';
 import { FerramentasView } from './FerramentasView';
 import { AnalyticsView } from './AnalyticsView';
 import { ConfiguracoesView } from './ConfiguracoesView';
+import { B2CConfigView } from './B2CConfigView';
 import { DocumentacaoView } from './DocumentacaoView';
 import { ThankYouPage } from './ThankYouPage';
 import type { User } from '@supabase/supabase-js';
@@ -26,6 +27,7 @@ export const Views = {
     Análise: () => <AnalyticsView />,
     Configuracoes: ({ onLogout }: { onLogout: () => void }) => <ConfiguracoesView onLogout={onLogout} />,
     Documentacao: () => <DocumentacaoView />,
+    B2CConfig: () => <B2CConfigView />,
     // New thank‑you page after a successful purchase
     ThankYou: () => <ThankYouPage />,
 };
