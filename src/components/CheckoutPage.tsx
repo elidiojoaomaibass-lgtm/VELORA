@@ -235,19 +235,52 @@ export const CheckoutPage = () => {
                 console.warn("Falha ao registar transação pendente:", txErr);
             }
 
-            // A atualização real para "Concluído" deve ser feita via webhook ou polling.
-            // Para efeitos de checkout instantâneo simulado/demonstrativo sem webhook local, marcamos como concluído temporariamente:
-            // Mas em produção o ideal seria aguardar. Vamos manter como Concluído como estava no código anterior.
-            await updateTransactionStatus(currentTxId, 'Concluído');
-            try {
-                const finalizeRes = await fetch(`/api/finalize-payment`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        transactionId: currentTxId,
-                        phone: sanitizedPaymentPhone,
-                        amount: product.price,
-                        reference: reference,
+            if (result.pending) {
+                setStatus('loading');
+                setErrorMessage(result.message || 'A aguardar confirmação no telemóvel. Por favor, introduza o seu PIN...');
+                
+                // Poll the transaction status from Supabase to check if webhook approved it
+                let attempts = 0;
+                const pollInterval = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const { createClient } = await import('@supabase/supabase-js');
+                        const supabase = createClient(
+                            import.meta.env.VITE_SUPABASE_URL,
+                            import.meta.env.VITE_SUPABASE_ANON_KEY
+                        );
+                        const { data } = await supabase.from('transactions').select('status').eq('id', currentTxId).single();
+                        
+                        if (data?.status === 'Concluído') {
+                            clearInterval(pollInterval);
+                            finalizeAndRedirect();
+                        } else if (data?.status === 'Falhou' || attempts > 60) { // 60 attempts * 2s = 2 mins
+                            clearInterval(pollInterval);
+                            setErrorMessage('Pagamento falhou ou expirou. Tente novamente.');
+                            setStatus('idle');
+                        }
+                    } catch (e) {
+                        // ignore poll errors
+                    }
+                }, 2000);
+                
+                return; // Do not proceed to finalize immediately!
+            } else {
+                // Synchronous success from gateway
+                await updateTransactionStatus(currentTxId, 'Concluído');
+                await finalizeAndRedirect();
+            }
+
+            async function finalizeAndRedirect() {
+                try {
+                    const finalizeRes = await fetch(`/api/finalize-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            transactionId: currentTxId,
+                            phone: sanitizedPaymentPhone,
+                            amount: product.price,
+                            reference: reference,
                         customerName: name,
                         product_id: product.id,
                         product_name: product.name,
@@ -309,6 +342,8 @@ export const CheckoutPage = () => {
             const params = new URLSearchParams(queryParams);
             window.location.href = `/obrigado?${params.toString()}`;
 
+            // (Movemos isto para dentro de finalizeAndRedirect)
+            } // fechar finalizeAndRedirect
         } catch (err: any) {
             setErrorMessage(err.message || 'Ocorreu um erro ao processar a compra. Tente novamente.');
             setStatus('idle');
