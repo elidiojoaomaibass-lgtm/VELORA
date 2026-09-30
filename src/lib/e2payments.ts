@@ -17,6 +17,9 @@ function formatGatewayError(data: any): string {
     if (code === 'KWK-BLOCKED') {
         return 'Comunicação temporariamente bloqueada pela Vodacom. Tente novamente em instantes.';
     }
+    if (typeof raw === 'string' && raw.toLowerCase().includes('system internal error')) {
+        return 'Ocorreu um erro interno na rede M-Pesa/Gateway ou tempo de espera esgotado. Verifique o seu telemóvel para confirmar se recebeu o pedido de PIN.';
+    }
     return raw || 'Erro no processamento do pagamento.';
 }
 
@@ -114,18 +117,28 @@ export class E2Payments {
             });
         }
 
-        const data = await response.json().catch(() => null);
+        // Para debug: vamos capturar o status e o texto bruto
+        const rawText = await response.text().catch(() => '');
+        console.log(`[E2Payments] C2B Status: ${response.status}`);
+        console.log(`[E2Payments] C2B Body: ${rawText}`);
+
+        let data = null;
+        try {
+            data = rawText ? JSON.parse(rawText) : null;
+        } catch (e) {
+            console.warn('[E2Payments] Failed to parse JSON body');
+        }
 
         if (!response.ok || (data && data.success === false)) {
             // WORKAROUND VERCEL PLANO GRÁTIS (10s timeout):
-            // Se o Vercel cortar a ligação por demorar mais de 10s (erro 504 ou 500 sem resposta do KwikPay),
-            // assumimos que o pedido M-Pesa foi disparado com sucesso e está a aguardar o PIN no telemóvel.
-            // O webhook atualizará o estado via Supabase Realtime.
-            if (response.status === 504 || (response.status === 500 && !isLocalhost)) {
-                console.log('Vercel timeout atingido. Assumindo pagamento como pendente (aguardando webhook)...');
+            const isVercelTimeout = response.status === 504 || response.status === 502 || response.status === 500;
+            const isGatewayErrorString = rawText.toLowerCase().includes('system internal error') || rawText.toLowerCase().includes('gateway timeout');
+
+            if (isVercelTimeout || isGatewayErrorString) {
+                console.log('Timeout/Erro Interno do Gateway atingido. Assumindo pagamento como pendente (aguardando webhook)...');
                 return { success: true, pending: true, message: 'A aguardar confirmação no telemóvel...' };
             }
-            throw new Error(formatGatewayError(data));
+            throw new Error(formatGatewayError(data || { error: rawText }));
         }
 
         return data;
