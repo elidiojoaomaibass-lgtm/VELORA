@@ -77,63 +77,27 @@ export class E2Payments {
         }
         cleanPhone = cleanPhone.slice(-9);
 
-        // 1. Try via direct proxy (/api/kwikpay-proxy)
-        try {
-            await this.authenticate();
-
-            const endpoint = method === 'mpesa' ? 'mpesa-payment' : 'emola-payment';
-            const url = `${this.baseUrl}/api/v1/c2b/${endpoint}/${walletId}`;
-
-            const payload = {
+        // Always use the robust serverless endpoint instead of the edge proxy
+        // The serverless function now has maxDuration 60s configured.
+        console.log('Using /api/kwikpay serverless endpoint for payment...');
+        const response = await fetch('/api/kwikpay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                method,
+                walletId,
                 amount: Number(amount),
                 phone: cleanPhone,
                 reference: cleanRef
-            };
+            })
+        });
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+        const data = await response.json().catch(() => null);
 
-            const data = await response.json().catch(() => null);
-            console.log("KwikPay Response (Proxy):", data);
-
-            if (!response.ok || (data && data.success === false)) {
-                throw new Error(formatGatewayError(data));
-            }
-
-            return data;
-        } catch (proxyErr: any) {
-            // If proxy failed due to network / CORS, fallback to serverless function /api/kwikpay
-            if (proxyErr.message?.includes('fetch') || proxyErr.message?.includes('NetworkError') || proxyErr.name === 'TypeError') {
-                console.warn('Proxy request failed, falling back to /api/kwikpay serverless endpoint...');
-                const fallbackRes = await fetch('/api/kwikpay', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        method,
-                        walletId,
-                        amount: Number(amount),
-                        phone: cleanPhone,
-                        reference: cleanRef
-                    })
-                });
-
-                const fallbackData = await fallbackRes.json().catch(() => null);
-
-                if (!fallbackRes.ok || (fallbackData && fallbackData.success === false)) {
-                    throw new Error(formatGatewayError(fallbackData));
-                }
-
-                return fallbackData;
-            }
-
-            throw proxyErr;
+        if (!response.ok || (data && data.success === false)) {
+            throw new Error(formatGatewayError(data));
         }
+
+        return data;
     }
 }
