@@ -215,11 +215,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('KwikPay B2C API Response:', b2cData);
 
       // Check for KwikPay error codes or response structure
-      const errorCode = b2cData.code || b2cData.data?.code;
+      const errorCode = b2cData.code || b2cData.data?.code || b2cData.data?.response_code;
       const friendlyError = errorCode && ERROR_DESCRIPTIONS[errorCode] ? ERROR_DESCRIPTIONS[errorCode] : null;
 
       if (!b2cRes.ok || b2cData.success === false) {
-        const errorMsg = friendlyError || b2cData.message || b2cData.error || 'Erro ao processar saque B2C.';
+        const errorMsg = friendlyError || b2cData.message || b2cData.error || b2cData.data?.response_description || 'Erro ao processar saque B2C.';
         return res.status(b2cRes.status || 400).json({
           success: false,
           error: errorMsg,
