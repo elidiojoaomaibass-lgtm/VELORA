@@ -23,6 +23,7 @@ export const CheckoutPage = () => {
     const [method, setMethod] = useState<'mpesa' | 'emola'>('mpesa');
     const [status, setStatus] = useState<'idle' | 'processing' | 'success'>('idle');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [pendingMessage, setPendingMessage] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
 
@@ -236,8 +237,9 @@ export const CheckoutPage = () => {
             }
 
             if (result.pending) {
-                setStatus('loading');
-                setErrorMessage(result.message || 'A aguardar confirmação no telemóvel. Por favor, introduza o seu PIN...');
+                setStatus('processing'); // Use processing instead of loading
+                setErrorMessage(null); // Clear any error
+                setPendingMessage(result.message || 'A aguardar confirmação no telemóvel. Por favor, introduza o seu PIN...');
                 
                 // Poll the transaction status from Supabase to check if webhook approved it
                 let attempts = 0;
@@ -253,10 +255,12 @@ export const CheckoutPage = () => {
                         
                         if (data?.status === 'Concluído') {
                             clearInterval(pollInterval);
+                            setPendingMessage(null);
                             finalizeAndRedirect();
                         } else if (data?.status === 'Falhou' || attempts > 60) { // 60 attempts * 2s = 2 mins
                             clearInterval(pollInterval);
-                            setErrorMessage('Pagamento falhou ou expirou. Tente novamente.');
+                            setPendingMessage(null);
+                            setErrorMessage('O pagamento expirou ou foi cancelado no telemóvel. Tente novamente.');
                             setStatus('idle');
                         }
                     } catch (e) {

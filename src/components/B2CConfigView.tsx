@@ -109,6 +109,7 @@ export const B2CConfigView = () => {
     const [balance, setBalance] = useState<WalletBalance | null>(null);
     const [balanceLoading, setBalanceLoading] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+    const [saqueLoading, setSaqueLoading] = useState(false);
 
     // ── Phone state ──
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -255,6 +256,38 @@ export const B2CConfigView = () => {
         } finally {
             setTestLoading(false);
             setTestRef(`TEST_${Date.now().toString().slice(-6)}`);
+        }
+    };
+
+    // ── Saque Imediato ─────────────────────────────────────────────────────────
+    const handleSaque = async () => {
+        if (!balance || !balance.balance || balance.balance < 1) {
+            toast.error('Saldo insuficiente para saque.');
+            return;
+        }
+        if (!phoneNumber || phoneNumber.length !== 9) {
+            toast.error('Número de destino não configurado ou inválido. Configure na aba "Número".');
+            return;
+        }
+        setSaqueLoading(true);
+        try {
+            const res = await fetch('/api/b2c', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'payout', amount: balance.balance, phone: phoneNumber, reference: `SAQ_${Date.now().toString().slice(-6)}`, recipient_name: 'Saque Imediato' }),
+            });
+            const data = await res.json();
+            const ok = res.ok && data.success !== false;
+            if (ok) {
+                toast.success(`✅ Saque de ${Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })} MZN processado!`);
+                fetchBalance();
+            } else {
+                toast.error(`❌ ${data.error || 'Erro no saque'}`);
+            }
+        } catch (err: any) {
+            toast.error('Falha de conexão com a API B2C.');
+        } finally {
+            setSaqueLoading(false);
         }
     };
 
@@ -494,15 +527,25 @@ export const B2CConfigView = () => {
                                             style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(13,148,136,0.08) 100%)' }}>
                                             <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
                                             <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/5 rounded-full blur-2xl -translate-x-1/4 translate-y-1/4" />
-                                            <div className="relative">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <Wallet size={16} className="text-emerald-400" />
-                                                    <span className="text-[11px] font-bold text-emerald-400/70 uppercase tracking-widest">Saldo Disponível</span>
+                                            <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <Wallet size={16} className="text-emerald-400" />
+                                                        <span className="text-[11px] font-bold text-emerald-400/70 uppercase tracking-widest">Saldo Disponível</span>
+                                                    </div>
+                                                    <p className="text-5xl lg:text-6xl font-black text-white tracking-tight">
+                                                        {balance.balance !== undefined ? Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 }) : '—'}
+                                                    </p>
+                                                    <p className="text-lg text-emerald-400/60 font-bold mt-1">{balance.currency || 'MZN'}</p>
                                                 </div>
-                                                <p className="text-5xl lg:text-6xl font-black text-white tracking-tight">
-                                                    {balance.balance !== undefined ? Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 }) : '—'}
-                                                </p>
-                                                <p className="text-lg text-emerald-400/60 font-bold mt-1">{balance.currency || 'MZN'}</p>
+                                                <button
+                                                    onClick={handleSaque}
+                                                    disabled={saqueLoading || !balance.balance || balance.balance < 1}
+                                                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                                                >
+                                                    {saqueLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+                                                    Saque Imediato
+                                                </button>
                                             </div>
                                         </div>
 
