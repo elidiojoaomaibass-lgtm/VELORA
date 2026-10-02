@@ -110,6 +110,7 @@ export const B2CConfigView = () => {
     const [balanceLoading, setBalanceLoading] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
     const [saqueLoading, setSaqueLoading] = useState(false);
+    const [saqueAmount, setSaqueAmount] = useState<string>('');
 
     // ── Phone state ──
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -265,6 +266,15 @@ export const B2CConfigView = () => {
             toast.error('Saldo insuficiente para saque.');
             return;
         }
+        const amt = parseFloat(saqueAmount);
+        if (!amt || amt < 1) {
+            toast.error('Por favor, informe um valor válido para o saque (mínimo 1 MZN).');
+            return;
+        }
+        if (amt > balance.balance) {
+            toast.error('Saldo insuficiente para este valor.');
+            return;
+        }
         if (!phoneNumber || phoneNumber.length !== 9) {
             toast.error('Número de destino não configurado ou inválido. Configure na aba "Número".');
             return;
@@ -274,12 +284,13 @@ export const B2CConfigView = () => {
             const res = await fetch('/api/b2c', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'payout', amount: balance.balance, phone: phoneNumber, reference: `SAQ_${Date.now().toString().slice(-6)}`, recipient_name: 'Saque Imediato' }),
+                body: JSON.stringify({ action: 'payout', amount: amt, phone: phoneNumber, reference: `SAQ_${Date.now().toString().slice(-6)}`, recipient_name: 'Saque' }),
             });
             const data = await res.json();
             const ok = res.ok && data.success !== false;
             if (ok) {
-                toast.success(`✅ Saque de ${Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })} MZN processado!`);
+                toast.success(`✅ Saque de ${Number(amt).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })} MZN processado!`);
+                setSaqueAmount('');
                 fetchBalance();
             } else {
                 toast.error(`❌ ${data.error || 'Erro no saque'}`);
@@ -538,14 +549,40 @@ export const B2CConfigView = () => {
                                                     </p>
                                                     <p className="text-lg text-emerald-400/60 font-bold mt-1">{balance.currency || 'MZN'}</p>
                                                 </div>
-                                                <button
-                                                    onClick={handleSaque}
-                                                    disabled={saqueLoading || !balance.balance || balance.balance < 1}
-                                                    className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
-                                                >
-                                                    {saqueLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-                                                    Saque Imediato
-                                                </button>
+                                                <div className="flex flex-col gap-3">
+                                                    <label className="text-xs font-bold text-emerald-400/70 uppercase tracking-widest">Valor a Levantar</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                value={saqueAmount}
+                                                                onChange={(e) => setSaqueAmount(e.target.value)}
+                                                                placeholder="Ex: 500"
+                                                                className="w-32 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 font-bold focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-all"
+                                                            />
+                                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/40">MZN</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={handleSaque}
+                                                            disabled={saqueLoading || !balance.balance || balance.balance < 1 || !saqueAmount}
+                                                            className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100"
+                                                        >
+                                                            {saqueLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+                                                            Sacar
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {[100, 500, 1000, balance.balance].map((val, idx) => val && val > 0 && (
+                                                            <button 
+                                                                key={`${val}-${idx}`} 
+                                                                onClick={() => setSaqueAmount(val.toString())}
+                                                                className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-colors"
+                                                            >
+                                                                {idx === 3 ? 'MÁX' : val}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
