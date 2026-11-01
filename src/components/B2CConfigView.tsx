@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Wallet, Key, Phone, RefreshCw, CheckCircle2, AlertCircle,
@@ -11,14 +11,14 @@ import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 
-// â”€â”€â”€ Local Storage Keys â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Local Storage Keys Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const LS_CLIENT_ID = 'b2c_client_id';
 const LS_CLIENT_SECRET = 'b2c_client_secret';
 const LS_WALLET_ID = 'b2c_wallet_id';
 const LS_PHONE = 'b2c_default_phone';
 const LS_ENV = 'b2c_environment';
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 interface WalletBalance {
     wallet_uuid?: string;
     wallet_name?: string;
@@ -43,19 +43,19 @@ type TabId = 'credenciais' | 'saldo' | 'numero' | 'historico' | 'testar';
 const TABS: { id: TabId; label: string; icon: React.ElementType; color: string }[] = [
     { id: 'credenciais', label: 'Credenciais', icon: Key, color: 'from-slate-600 to-slate-800' },
     { id: 'saldo', label: 'Saldo', icon: Wallet, color: 'from-emerald-500 to-teal-600' },
-    { id: 'numero', label: 'NÃºmero', icon: Phone, color: 'from-blue-500 to-cyan-600' },
-    { id: 'historico', label: 'HistÃ³rico', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
+    { id: 'numero', label: 'NÃƒÂºmero', icon: Phone, color: 'from-blue-500 to-cyan-600' },
+    { id: 'historico', label: 'HistÃƒÂ³rico', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
     { id: 'testar', label: 'Testar', icon: TestTube2, color: 'from-rose-500 to-pink-600' },
 ];
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: React.ElementType }> = {
     success: { label: 'Sucesso', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
-    completed: { label: 'ConcluÃ­do', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
+    completed: { label: 'ConcluÃƒÂ­do', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
     failed: { label: 'Falhou', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20', icon: XCircle },
     pending: { label: 'Pendente', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', icon: Clock },
 };
 
-// â”€â”€â”€ Utility: CopyButton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Utility: CopyButton Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false);
     const handle = () => {
@@ -71,7 +71,7 @@ function CopyButton({ text }: { text: string }) {
     );
 }
 
-// â”€â”€â”€ Utility: StatCard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Utility: StatCard Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 function StatCard({ label, value, sub, icon: Icon, gradient }: {
     label: string; value: string; sub?: string;
     icon: React.ElementType; gradient: string;
@@ -93,11 +93,11 @@ function StatCard({ label, value, sub, icon: Icon, gradient }: {
     );
 }
 
-// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 export const B2CConfigView = () => {
     const [activeTab, setActiveTab] = useState<TabId>('credenciais');
 
-    // â”€â”€ Credentials state â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Credentials state Ã¢â€â‚¬Ã¢â€â‚¬
     const [clientId, setClientId] = useState('');
     const [clientSecret, setClientSecret] = useState('');
     const [walletId, setWalletId] = useState('');
@@ -105,31 +105,31 @@ export const B2CConfigView = () => {
     const [showSecret, setShowSecret] = useState(false);
     const [credsSaving, setCredsSaving] = useState(false);
 
-    // â”€â”€ Balance state â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Balance state Ã¢â€â‚¬Ã¢â€â‚¬
     const [balance, setBalance] = useState<WalletBalance | null>(null);
     const [balanceLoading, setBalanceLoading] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
     const [saqueLoading, setSaqueLoading] = useState(false);
     const [saqueAmount, setSaqueAmount] = useState<string>('');
 
-    // â”€â”€ Phone state â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Phone state Ã¢â€â‚¬Ã¢â€â‚¬
     const [phoneNumber, setPhoneNumber] = useState('');
     const [phoneSaving, setPhoneSaving] = useState(false);
     const [phoneVerified, setPhoneVerified] = useState(false);
 
-    // â”€â”€ History state â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ History state Ã¢â€â‚¬Ã¢â€â‚¬
     const [txs, setTxs] = useState<B2CTx[]>([]);
     const [txsLoading, setTxsLoading] = useState(false);
     const [txFilter, setTxFilter] = useState<'all' | 'success' | 'failed' | 'pending'>('all');
 
-    // â”€â”€ Test Payout state â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Test Payout state Ã¢â€â‚¬Ã¢â€â‚¬
     const [testAmount, setTestAmount] = useState('10');
     const [testPhone, setTestPhone] = useState('');
     const [testRef, setTestRef] = useState(`TEST_${Date.now().toString().slice(-6)}`);
     const [testLoading, setTestLoading] = useState(false);
     const [testResult, setTestResult] = useState<any>(null);
 
-    // â”€â”€ Load from storage on mount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Load from storage on mount Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     useEffect(() => {
         setClientId(localStorage.getItem(LS_CLIENT_ID) || (import.meta.env.VITE_KWIKPAY_CLIENT_ID ?? ''));
         setClientSecret(localStorage.getItem(LS_CLIENT_SECRET) || (import.meta.env.VITE_KWIKPAY_CLIENT_SECRET ?? ''));
@@ -158,7 +158,7 @@ export const B2CConfigView = () => {
         })();
     }, []);
 
-    // â”€â”€ Fetch Balance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Fetch Balance Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const fetchBalance = useCallback(async () => {
         setBalanceLoading(true);
         try {
@@ -167,13 +167,13 @@ export const B2CConfigView = () => {
             setBalance(data.success && data.data ? data.data : data);
             setLastRefresh(new Date());
         } catch {
-            toast.error('NÃ£o foi possÃ­vel consultar o saldo.');
+            toast.error('NÃƒÂ£o foi possÃƒÂ­vel consultar o saldo.');
         } finally {
             setBalanceLoading(false);
         }
     }, []);
 
-    // â”€â”€ Fetch Transactions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Fetch Transactions Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const fetchTxs = useCallback(async () => {
         setTxsLoading(true);
         try {
@@ -182,7 +182,7 @@ export const B2CConfigView = () => {
             const data = await res.json();
             setTxs(data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []);
         } catch {
-            toast.error('Erro ao carregar histÃ³rico.');
+            toast.error('Erro ao carregar histÃƒÂ³rico.');
         } finally {
             setTxsLoading(false);
         }
@@ -193,7 +193,7 @@ export const B2CConfigView = () => {
         if (activeTab === 'historico') fetchTxs();
     }, [activeTab, fetchBalance, fetchTxs]);
 
-    // â”€â”€ Save Credentials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Save Credentials Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const handleSaveCredentials = async () => {
         if (!clientId.trim() || !clientSecret.trim() || !walletId.trim()) {
             toast.error('Preenche todos os campos de credenciais.');
@@ -206,13 +206,13 @@ export const B2CConfigView = () => {
         localStorage.setItem(LS_WALLET_ID, walletId.trim());
         localStorage.setItem(LS_ENV, environment);
         setCredsSaving(false);
-        toast.success('âœ… Credenciais B2C guardadas com sucesso!');
+        toast.success('Ã¢Å“â€¦ Credenciais B2C guardadas com sucesso!');
     };
 
-    // â”€â”€ Save Phone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Save Phone Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const handleSavePhone = async () => {
         const clean = phoneNumber.replace(/\D/g, '').slice(-9);
-        if (clean.length !== 9) { toast.error('NÃºmero M-Pesa invÃ¡lido (9 dÃ­gitos).'); return; }
+        if (clean.length !== 9) { toast.error('NÃƒÂºmero M-Pesa invÃƒÂ¡lido (9 dÃƒÂ­gitos).'); return; }
         setPhoneSaving(true);
         try {
             const { data: sess } = await supabase.auth.getSession();
@@ -225,20 +225,20 @@ export const B2CConfigView = () => {
             localStorage.setItem(LS_PHONE, clean);
             setPhoneVerified(true);
             setTestPhone(clean);
-            toast.success(`ðŸ“± NÃºmero +258 ${clean} configurado como destino B2C!`);
+            toast.success(`Ã°Å¸â€œÂ± NÃƒÂºmero +258 ${clean} configurado como destino B2C!`);
         } catch {
-            toast.error('Erro ao guardar nÃºmero no Supabase.');
+            toast.error('Erro ao guardar nÃƒÂºmero no Supabase.');
         } finally {
             setPhoneSaving(false);
         }
     };
 
-    // â”€â”€ Test Payout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Test Payout Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const handleTestPayout = async () => {
         const amt = parseFloat(testAmount);
-        if (!amt || amt < 1) { toast.error('Valor mÃ­nimo: 1 MZN'); return; }
+        if (!amt || amt < 1) { toast.error('Valor mÃƒÂ­nimo: 1 MZN'); return; }
         const cleanPhone = testPhone.replace(/\D/g, '').slice(-9);
-        if (cleanPhone.length !== 9) { toast.error('NÃºmero invÃ¡lido (9 dÃ­gitos).'); return; }
+        if (cleanPhone.length !== 9) { toast.error('NÃƒÂºmero invÃƒÂ¡lido (9 dÃƒÂ­gitos).'); return; }
         setTestLoading(true);
         setTestResult(null);
         try {
@@ -250,17 +250,17 @@ export const B2CConfigView = () => {
             const data = await res.json();
             const ok = res.ok && data.success !== false;
             setTestResult({ ok, data });
-            ok ? toast.success('âœ… Payout de teste processado!') : toast.error(`âŒ ${data.error || 'Erro no payout'}`);
+            ok ? toast.success('Ã¢Å“â€¦ Payout de teste processado!') : toast.error(`Ã¢ÂÅ’ ${data.error || 'Erro no payout'}`);
         } catch (err: any) {
             setTestResult({ ok: false, data: { error: err.message } });
-            toast.error('Falha de conexÃ£o com a API B2C.');
+            toast.error('Falha de conexÃƒÂ£o com a API B2C.');
         } finally {
             setTestLoading(false);
             setTestRef(`TEST_${Date.now().toString().slice(-6)}`);
         }
     };
 
-    // â”€â”€ Saque Imediato â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Saque Imediato Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const handleSaque = async () => {
         if (!balance || !balance.balance || balance.balance < 1) {
             toast.error('Saldo insuficiente para saque.');
@@ -268,7 +268,7 @@ export const B2CConfigView = () => {
         }
         const amt = parseFloat(saqueAmount);
         if (!amt || amt < 1) {
-            toast.error('Por favor, informe um valor vÃ¡lido para o saque (mÃ­nimo 1 MZN).');
+            toast.error('Por favor, informe um valor vÃƒÂ¡lido para o saque (mÃƒÂ­nimo 1 MZN).');
             return;
         }
         if (amt > balance.balance) {
@@ -276,7 +276,7 @@ export const B2CConfigView = () => {
             return;
         }
         if (!phoneNumber || phoneNumber.length !== 9) {
-            toast.error('NÃºmero de destino nÃ£o configurado ou invÃ¡lido. Configure na aba "NÃºmero".');
+            toast.error('NÃƒÂºmero de destino nÃƒÂ£o configurado ou invÃƒÂ¡lido. Configure na aba "NÃƒÂºmero".');
             return;
         }
         setSaqueLoading(true);
@@ -289,25 +289,25 @@ export const B2CConfigView = () => {
             const data = await res.json();
             const ok = res.ok && data.success !== false;
             if (ok) {
-                toast.success(`âœ… Saque de ${Number(amt).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })} MZN processado!`);
+                toast.success(`Ã¢Å“â€¦ Saque de ${Number(amt).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })} MZN processado!`);
                 setSaqueAmount('');
                 fetchBalance();
             } else {
-                toast.error(`âŒ ${data.error || 'Erro no saque'}`);
+                toast.error(`Ã¢ÂÅ’ ${data.error || 'Erro no saque'}`);
             }
         } catch (err: any) {
-            toast.error('Falha de conexÃ£o com a API B2C.');
+            toast.error('Falha de conexÃƒÂ£o com a API B2C.');
         } finally {
             setSaqueLoading(false);
         }
     };
 
-    // â”€â”€ Format helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'â€”';
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Format helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    const fmtDate = (d?: string) => d ? new Date(d).toLocaleString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Ã¢â‚¬â€';
     const fmtAmt = (n: number) => `${Number(n).toLocaleString('pt-MZ', { minimumFractionDigits: 2 })} MZN`;
     const feePreview = (amt: number) => ({ fee: Math.max(amt * 0.07, 10), net: Math.max(amt - Math.max(amt * 0.07, 10), 0) });
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     return (
         <div className="min-h-screen bg-[#0c1220] text-white">
             {/* Ambient glows */}
@@ -318,15 +318,15 @@ export const B2CConfigView = () => {
             </div>
 
             <div className="relative z-10 p-4 lg:p-8 max-w-5xl mx-auto">
-                {/* â”€â”€ Header â”€â”€ */}
+                {/* Ã¢â€â‚¬Ã¢â€â‚¬ Header Ã¢â€â‚¬Ã¢â€â‚¬ */}
                 <div className="mb-8">
                     <div className="flex items-center gap-4 mb-3">
                         <div className="p-3 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 shadow-lg shadow-black/30">
                             <Settings2 size={24} className="text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-white tracking-tight">ConfiguraÃ§Ã£o B2C</h1>
-                            <p className="text-sm text-white/40 mt-0.5">KwikPay Â· M-Pesa Â· Business-to-Consumer</p>
+                            <h1 className="text-3xl font-black text-white tracking-tight">ConfiguraÃƒÂ§ÃƒÂ£o B2C</h1>
+                            <p className="text-sm text-white/40 mt-0.5">KwikPay Ã‚Â· M-Pesa Ã‚Â· Business-to-Consumer</p>
                         </div>
                     </div>
 
@@ -339,20 +339,20 @@ export const B2CConfigView = () => {
                                 : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                         )}>
                             <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', environment === 'production' ? 'bg-emerald-400' : 'bg-amber-400')} />
-                            {environment === 'production' ? 'PRODUÃ‡ÃƒO ACTIVA' : 'SANDBOX'}
+                            {environment === 'production' ? 'PRODUÃƒâ€¡ÃƒÆ’O ACTIVA' : 'SANDBOX'}
                         </span>
                         {clientId && (
                             <span className="text-xs text-white/30 font-mono">Client ID: {clientId}</span>
                         )}
                         {balance?.balance !== undefined && (
                             <span className="text-xs font-bold text-emerald-400">
-                                ðŸ’° {fmtAmt(balance.balance)}
+                                Ã°Å¸â€™Â° {fmtAmt(balance.balance)}
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* â”€â”€ Tab Bar â”€â”€ */}
+                {/* Ã¢â€â‚¬Ã¢â€â‚¬ Tab Bar Ã¢â€â‚¬Ã¢â€â‚¬ */}
                 <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.07] rounded-2xl mb-8 overflow-x-auto scrollbar-hide">
                     {TABS.map(tab => (
                         <button
@@ -371,7 +371,7 @@ export const B2CConfigView = () => {
                     ))}
                 </div>
 
-                {/* â”€â”€ Tab Content â”€â”€ */}
+                {/* Ã¢â€â‚¬Ã¢â€â‚¬ Tab Content Ã¢â€â‚¬Ã¢â€â‚¬ */}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -381,16 +381,16 @@ export const B2CConfigView = () => {
                         transition={{ duration: 0.22 }}
                     >
 
-                        {/* â”â”â”â”â”â”â”â”â”â” CREDENCIAIS â”â”â”â”â”â”â”â”â”â” */}
+                        {/* Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â CREDENCIAIS Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â */}
                         {activeTab === 'credenciais' && (
                             <div className="space-y-6">
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-500/5 border border-slate-500/20">
                                     <Info size={17} className="text-slate-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-slate-300 text-sm mb-1">ConfiguraÃ§Ã£o Manual das Credenciais KwikPay</p>
+                                        <p className="font-semibold text-slate-300 text-sm mb-1">ConfiguraÃƒÂ§ÃƒÂ£o Manual das Credenciais KwikPay</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
-                                            As credenciais guardadas aqui tÃªm prioridade sobre as variÃ¡veis de ambiente.
-                                            SÃ£o usadas nas chamadas B2C via gateway KwikPay.
+                                            As credenciais guardadas aqui tÃƒÂªm prioridade sobre as variÃƒÂ¡veis de ambiente.
+                                            SÃƒÂ£o usadas nas chamadas B2C via gateway KwikPay.
                                         </p>
                                     </div>
                                 </div>
@@ -432,7 +432,7 @@ export const B2CConfigView = () => {
                                                             : 'bg-white/[0.03] border-white/[0.09] text-white/40 hover:text-white/60'
                                                     )}
                                                 >
-                                                    {env === 'production' ? 'ðŸŸ¢ ProduÃ§Ã£o' : 'ðŸŸ¡ Sandbox'}
+                                                    {env === 'production' ? 'Ã°Å¸Å¸Â¢ ProduÃƒÂ§ÃƒÂ£o' : 'Ã°Å¸Å¸Â¡ Sandbox'}
                                                 </button>
                                             ))}
                                         </div>
@@ -492,25 +492,25 @@ export const B2CConfigView = () => {
                                 {/* Active config summary */}
                                 {(clientId || walletId) && (
                                     <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] space-y-3">
-                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest">ConfiguraÃ§Ã£o Activa</p>
+                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest">ConfiguraÃƒÂ§ÃƒÂ£o Activa</p>
                                         <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-xs">
-                                            <div><span className="text-white/30">Client ID:</span> <span className="text-white/70 font-mono ml-1">{clientId || 'â€”'}</span></div>
+                                            <div><span className="text-white/30">Client ID:</span> <span className="text-white/70 font-mono ml-1">{clientId || 'Ã¢â‚¬â€'}</span></div>
                                             <div><span className="text-white/30">Ambiente:</span> <span className={cn('font-semibold ml-1', environment === 'production' ? 'text-emerald-400' : 'text-amber-400')}>{environment}</span></div>
-                                            <div className="col-span-2"><span className="text-white/30">Wallet:</span> <span className="text-white/60 font-mono ml-1 break-all">{walletId || 'â€”'}</span></div>
+                                            <div className="col-span-2"><span className="text-white/30">Wallet:</span> <span className="text-white/60 font-mono ml-1 break-all">{walletId || 'Ã¢â‚¬â€'}</span></div>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* â”â”â”â”â”â”â”â”â”â” SALDO â”â”â”â”â”â”â”â”â”â” */}
+                        {/* Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â SALDO Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â */}
                         {activeTab === 'saldo' && (
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h2 className="text-lg font-bold text-white">Saldo da Carteira KwikPay</h2>
                                         <p className="text-xs text-white/30 mt-0.5">
-                                            {lastRefresh ? `Ãšltima actualizaÃ§Ã£o: ${lastRefresh.toLocaleTimeString('pt-PT')}` : 'Clique em Atualizar para consultar'}
+                                            {lastRefresh ? `ÃƒÅ¡ltima actualizaÃƒÂ§ÃƒÂ£o: ${lastRefresh.toLocaleTimeString('pt-PT')}` : 'Clique em Atualizar para consultar'}
                                         </p>
                                     </div>
                                     <button
@@ -542,10 +542,10 @@ export const B2CConfigView = () => {
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <Wallet size={16} className="text-emerald-400" />
-                                                        <span className="text-[11px] font-bold text-emerald-400/70 uppercase tracking-widest">Saldo DisponÃ­vel</span>
+                                                        <span className="text-[11px] font-bold text-emerald-400/70 uppercase tracking-widest">Saldo DisponÃƒÂ­vel</span>
                                                     </div>
                                                     <p className="text-5xl lg:text-6xl font-black text-white tracking-tight">
-                                                        {balance.balance !== undefined ? Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 }) : 'â€”'}
+                                                        {balance.balance !== undefined ? Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 }) : 'Ã¢â‚¬â€'}
                                                     </p>
                                                     <p className="text-lg text-emerald-400/60 font-bold mt-1">{balance.currency || 'MZN'}</p>
                                                 </div>
@@ -578,7 +578,7 @@ export const B2CConfigView = () => {
                                                                 onClick={() => setSaqueAmount(val.toString())}
                                                                 className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-emerald-400 hover:bg-white/10 transition-colors"
                                                             >
-                                                                {idx === 3 ? 'MÃX' : val}
+                                                                {idx === 3 ? 'MÃƒÂX' : val}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -590,7 +590,7 @@ export const B2CConfigView = () => {
                                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                             <StatCard label="Carteira" value={balance.wallet_name || 'KwikPay'} icon={CreditCard} gradient="from-blue-500 to-cyan-600" />
                                             <StatCard label="Ambiente" value={balance.environment || environment} icon={Globe} gradient="from-slate-600 to-slate-800" />
-                                            <StatCard label="Wallet UUID" value={balance.wallet_uuid ? `${balance.wallet_uuid.slice(0, 8)}â€¦` : 'â€”'} sub={balance.wallet_uuid} icon={Hash} gradient="from-amber-500 to-orange-600" />
+                                            <StatCard label="Wallet UUID" value={balance.wallet_uuid ? `${balance.wallet_uuid.slice(0, 8)}Ã¢â‚¬Â¦` : 'Ã¢â‚¬â€'} sub={balance.wallet_uuid} icon={Hash} gradient="from-amber-500 to-orange-600" />
                                         </div>
 
                                         {/* Raw response */}
@@ -613,27 +613,27 @@ export const B2CConfigView = () => {
                             </div>
                         )}
 
-                        {/* â”â”â”â”â”â”â”â”â”â” NÃšMERO â”â”â”â”â”â”â”â”â”â” */}
+                        {/* Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â NÃƒÅ¡MERO Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â */}
                         {activeTab === 'numero' && (
                             <div className="space-y-6">
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
                                     <Info size={17} className="text-blue-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-blue-300 text-sm mb-1">NÃºmero PadrÃ£o de Destino B2C</p>
+                                        <p className="font-semibold text-blue-300 text-sm mb-1">NÃƒÂºmero PadrÃƒÂ£o de Destino B2C</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
-                                            Este nÃºmero M-Pesa Ã© usado automaticamente como destino quando nÃ£o Ã© especificado
-                                            um nÃºmero durante o saque. Ã‰ guardado no Supabase e sincronizado com o teu perfil.
+                                            Este nÃƒÂºmero M-Pesa ÃƒÂ© usado automaticamente como destino quando nÃƒÂ£o ÃƒÂ© especificado
+                                            um nÃƒÂºmero durante o saque. Ãƒâ€° guardado no Supabase e sincronizado com o teu perfil.
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
                                     <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                                        <Phone size={11} className="text-blue-400" /> NÃºmero M-Pesa (9 dÃ­gitos)
+                                        <Phone size={11} className="text-blue-400" /> NÃƒÂºmero M-Pesa (9 dÃƒÂ­gitos)
                                     </label>
                                     <div className="flex gap-3">
                                         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.09] text-sm text-white/50 font-semibold whitespace-nowrap">
-                                            ðŸ‡²ðŸ‡¿ +258
+                                            Ã°Å¸â€¡Â²Ã°Å¸â€¡Â¿ +258
                                         </div>
                                         <input
                                             type="tel"
@@ -661,8 +661,8 @@ export const B2CConfigView = () => {
                                             )}
                                         >
                                             {phoneNumber.length === 9
-                                                ? <><CheckCircle2 size={13} /> NÃºmero vÃ¡lido â€” pronto para guardar</>
-                                                : <><AlertCircle size={13} /> Faltam {9 - phoneNumber.length} dÃ­gito(s)</>}
+                                                ? <><CheckCircle2 size={13} /> NÃƒÂºmero vÃƒÂ¡lido Ã¢â‚¬â€ pronto para guardar</>
+                                                : <><AlertCircle size={13} /> Faltam {9 - phoneNumber.length} dÃƒÂ­gito(s)</>}
                                         </motion.div>
                                     )}
 
@@ -670,7 +670,7 @@ export const B2CConfigView = () => {
                                     <div className="flex flex-wrap gap-2 pt-1">
                                         {[{ p: '84', op: 'Vodacom M-Pesa' }, { p: '85', op: 'Vodacom M-Pesa' }, { p: '86', op: 'Movitel' }, { p: '87', op: 'e-Mola' }].map(({ p, op }) => (
                                             <div key={p} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-[11px] text-white/35">
-                                                <span className="font-mono font-bold text-white/50">+258 {p}x</span> Â· {op}
+                                                <span className="font-mono font-bold text-white/50">+258 {p}x</span> Ã‚Â· {op}
                                             </div>
                                         ))}
                                     </div>
@@ -690,8 +690,8 @@ export const B2CConfigView = () => {
                                     {phoneSaving
                                         ? <><Loader2 size={16} className="animate-spin" /> A guardar no Supabase...</>
                                         : phoneVerified
-                                            ? <><CheckCircle2 size={16} /> NÃºmero Guardado!</>
-                                            : <><Save size={16} /> Guardar como Destino PadrÃ£o</>}
+                                            ? <><CheckCircle2 size={16} /> NÃƒÂºmero Guardado!</>
+                                            : <><Save size={16} /> Guardar como Destino PadrÃƒÂ£o</>}
                                 </button>
 
                                 {/* Preview card */}
@@ -705,7 +705,7 @@ export const B2CConfigView = () => {
                                             </div>
                                             <div>
                                                 <p className="text-xl font-bold text-white font-mono">+258 {phoneNumber}</p>
-                                                <p className="text-xs text-white/35 mt-0.5">M-Pesa Â· MoÃ§ambique</p>
+                                                <p className="text-xs text-white/35 mt-0.5">M-Pesa Ã‚Â· MoÃƒÂ§ambique</p>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -713,11 +713,11 @@ export const B2CConfigView = () => {
                             </div>
                         )}
 
-                        {/* â”â”â”â”â”â”â”â”â”â” HISTÃ“RICO â”â”â”â”â”â”â”â”â”â” */}
+                        {/* Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â HISTÃƒâ€œRICO Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â */}
                         {activeTab === 'historico' && (
                             <div className="space-y-5">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-bold text-white">HistÃ³rico de TransaÃ§Ãµes B2C</h2>
+                                    <h2 className="text-lg font-bold text-white">HistÃƒÂ³rico de TransaÃƒÂ§ÃƒÂµes B2C</h2>
                                     <button
                                         onClick={fetchTxs}
                                         disabled={txsLoading}
@@ -741,7 +741,7 @@ export const B2CConfigView = () => {
                                                     : 'bg-white/[0.03] border-white/[0.08] text-white/40 hover:text-white/60 hover:bg-white/[0.05]'
                                             )}
                                         >
-                                            {f === 'all' ? 'Â· Todas' : STATUS_MAP[f]?.label || f}
+                                            {f === 'all' ? 'Ã‚Â· Todas' : STATUS_MAP[f]?.label || f}
                                         </button>
                                     ))}
                                 </div>
@@ -754,8 +754,8 @@ export const B2CConfigView = () => {
                                     <div className="flex flex-col items-center justify-center py-16 gap-4">
                                         <Activity size={40} className="text-white/10" />
                                         <div className="text-center">
-                                            <p className="text-white/35 text-sm font-semibold">Nenhuma transaÃ§Ã£o encontrada</p>
-                                            <p className="text-white/20 text-xs mt-1">As transaÃ§Ãµes B2C aparecem aqui apÃ³s processamento</p>
+                                            <p className="text-white/35 text-sm font-semibold">Nenhuma transaÃƒÂ§ÃƒÂ£o encontrada</p>
+                                            <p className="text-white/20 text-xs mt-1">As transaÃƒÂ§ÃƒÂµes B2C aparecem aqui apÃƒÂ³s processamento</p>
                                         </div>
                                     </div>
                                 ) : (
@@ -783,14 +783,14 @@ export const B2CConfigView = () => {
                                                             </span>
                                                         </div>
                                                         <p className="text-xs text-white/35 mt-0.5 font-mono">
-                                                            ðŸ“± +258 {tx.phone} Â· <span className="text-white/25">{tx.reference}</span>
+                                                            Ã°Å¸â€œÂ± +258 {tx.phone} Ã‚Â· <span className="text-white/25">{tx.reference}</span>
                                                         </p>
                                                     </div>
                                                     <div className="text-right shrink-0">
                                                         <p className="text-xs text-white/30">{fmtDate(tx.created_at)}</p>
                                                         {tx.fees?.net_amount !== undefined && (
                                                             <p className="text-xs text-emerald-400 mt-0.5 font-semibold">
-                                                                LÃ­q: {fmtAmt(tx.fees.net_amount)}
+                                                                LÃƒÂ­q: {fmtAmt(tx.fees.net_amount)}
                                                             </p>
                                                         )}
                                                     </div>
@@ -802,16 +802,16 @@ export const B2CConfigView = () => {
                             </div>
                         )}
 
-                        {/* â”â”â”â”â”â”â”â”â”â” TESTAR â”â”â”â”â”â”â”â”â”â” */}
+                        {/* Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â TESTAR Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â */}
                         {activeTab === 'testar' && (
                             <div className="space-y-6">
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20">
                                     <AlertCircle size={17} className="text-rose-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-rose-300 text-sm mb-1">âš ï¸ Payout Real â€” AtenÃ§Ã£o</p>
+                                        <p className="font-semibold text-rose-300 text-sm mb-1">Ã¢Å¡Â Ã¯Â¸Â Payout Real Ã¢â‚¬â€ AtenÃƒÂ§ÃƒÂ£o</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
-                                            Este mÃ³dulo executa um payout B2C real via KwikPay M-Pesa.
-                                            Usa um nÃºmero e valor corretos. TransaÃ§Ãµes aprovadas nÃ£o sÃ£o reembolsadas automaticamente.
+                                            Este mÃƒÂ³dulo executa um payout B2C real via KwikPay M-Pesa.
+                                            Usa um nÃƒÂºmero e valor corretos. TransaÃƒÂ§ÃƒÂµes aprovadas nÃƒÂ£o sÃƒÂ£o reembolsadas automaticamente.
                                         </p>
                                     </div>
                                 </div>
@@ -850,11 +850,11 @@ export const B2CConfigView = () => {
                                     {/* Phone */}
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                                            <Phone size={11} className="text-rose-400" /> NÃºmero Destino
+                                            <Phone size={11} className="text-rose-400" /> NÃƒÂºmero Destino
                                         </label>
                                         <div className="flex gap-2">
                                             <div className="flex items-center px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.09] text-xs text-white/40 whitespace-nowrap">
-                                                ðŸ‡²ðŸ‡¿ +258
+                                                Ã°Å¸â€¡Â²Ã°Å¸â€¡Â¿ +258
                                             </div>
                                             <input
                                                 type="tel" value={testPhone} maxLength={9}
@@ -866,7 +866,7 @@ export const B2CConfigView = () => {
                                         {phoneNumber && testPhone !== phoneNumber && (
                                             <button onClick={() => setTestPhone(phoneNumber)}
                                                 className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
-                                                <ArrowUpRight size={12} /> Usar nÃºmero padrÃ£o ({phoneNumber})
+                                                <ArrowUpRight size={12} /> Usar nÃƒÂºmero padrÃƒÂ£o ({phoneNumber})
                                             </button>
                                         )}
                                     </div>
@@ -874,7 +874,7 @@ export const B2CConfigView = () => {
                                     {/* Reference */}
                                     <div className="space-y-2 lg:col-span-2">
                                         <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                                            <Hash size={11} className="text-rose-400" /> ReferÃªncia
+                                            <Hash size={11} className="text-rose-400" /> ReferÃƒÂªncia
                                         </label>
                                         <input
                                             type="text" value={testRef}
@@ -888,12 +888,12 @@ export const B2CConfigView = () => {
                                 {parseFloat(testAmount) > 0 && (
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                         className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.07]">
-                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">PrevisÃ£o de Taxas Â· 7% (mÃ­n. 10 MZN)</p>
+                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">PrevisÃƒÂ£o de Taxas Ã‚Â· 7% (mÃƒÂ­n. 10 MZN)</p>
                                         <div className="grid grid-cols-3 gap-4 text-center">
                                             {[
                                                 { label: 'Valor Enviado', val: parseFloat(testAmount), color: 'text-white' },
                                                 { label: 'Taxa KwikPay', val: -feePreview(parseFloat(testAmount)).fee, color: 'text-rose-400' },
-                                                { label: 'LÃ­quido Recebido', val: feePreview(parseFloat(testAmount)).net, color: 'text-emerald-400' },
+                                                { label: 'LÃƒÂ­quido Recebido', val: feePreview(parseFloat(testAmount)).net, color: 'text-emerald-400' },
                                             ].map(({ label, val, color }) => (
                                                 <div key={label}>
                                                     <p className="text-[10px] text-white/30 mb-2 uppercase tracking-wide">{label}</p>
@@ -959,4 +959,5 @@ export const B2CConfigView = () => {
         </div>
     );
 };
+
 
