@@ -88,9 +88,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`Upsert transação ${transaction_id} -> status: ${finalStatus}`);
 
     // Upsert garante que a transação é criada se não existir (caso o browser falhou ao inserir)
-    const { data: updatedTx, error } = await supabase
+    const { error } = await supabase
       .from('transactions')
-      .upsert([
+      .upsert(
         {
           id: transaction_id,
           type: 'payment',
@@ -102,10 +102,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           customerName: customerName || 'Cliente',
           description: payload.description || '',
           createdat: new Date().toISOString(),
-        }
-      ], { onConflict: 'id', ignoreDuplicates: false })
+        },
+        { onConflict: 'id' }
+      );
+
+    // Buscar a transação actualizada separadamente
+    const { data: updatedTx } = await supabase
+      .from('transactions')
       .select()
-      .single();
+      .eq('id', transaction_id)
+      .maybeSingle();
 
     if (!error) {
       console.log('Sucesso ao atualizar a transação no Supabase:', transaction_id, '->', finalStatus);

@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       customerEmail: customerEmail || '',
       device: device || 'Desktop',
       createdat: new Date().toISOString(),
-    }], { onConflict: 'id', ignoreDuplicates: false });
+    }], { onConflict: 'id' });
 
     if (error) {
       console.error('Erro ao registar transação:', error);
