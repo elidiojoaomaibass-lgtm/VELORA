@@ -112,7 +112,7 @@ function App() {
   // Check current session
   useEffect(() => {
     supabase.auth.getSession()
-      .then(({ data: { session: currentSession } }) => {
+      .then(({ data: { session: currentSession } }: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
         if (currentSession) {
           setSession(currentSession);
         } else {
@@ -332,7 +332,7 @@ function App() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     w.ttq.setAndDefer = function (t: any, e: string) {
       t[e] = function (...innerArgs: unknown[]) {
-        t.push([e].concat(innerArgs));
+        t.push([e].concat(innerArgs as string[]));
       };
     };
     for (let i = 0; i < w.ttq.methods.length; i++) w.ttq.setAndDefer(w.ttq, w.ttq.methods[i]);
@@ -391,7 +391,7 @@ function App() {
         return;
       }
 
-      supabase.auth.getSession().then(({ data: { session: newSession } }) => {
+      supabase.auth.getSession().then(({ data: { session: newSession } }: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
         if (newSession) {
           setSession(newSession);
         } else {

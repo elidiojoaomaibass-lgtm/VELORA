@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Wallet, Key, Phone, RefreshCw, CheckCircle2, AlertCircle,
@@ -127,7 +127,7 @@ export const B2CConfigView = () => {
     const [testPhone, setTestPhone] = useState('');
     const [testRef, setTestRef] = useState(`TEST_${Date.now().toString().slice(-6)}`);
     const [testLoading, setTestLoading] = useState(false);
-    const [testResult, setTestResult] = useState<unknown>(null);
+    const [testResult, setTestResult] = useState<{ ok: boolean; data: Record<string, string | undefined> } | null>(null);
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Load from storage on mount Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     useEffect(() => {
@@ -249,7 +249,7 @@ export const B2CConfigView = () => {
             });
             const data = await res.json();
             const ok = res.ok && data.success !== false;
-            setTestResult({ ok, data });
+            setTestResult({ ok, data: data as Record<string, string | undefined> });
             if (ok) {
                 toast.success('Payout de teste processado com sucesso!');
             } else {

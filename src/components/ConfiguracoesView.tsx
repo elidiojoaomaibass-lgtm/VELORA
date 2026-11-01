@@ -114,8 +114,8 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
 
             window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: metadata }));
             setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
-        } catch {
-            setMessage({ type: 'error', text: err.message || 'Erro ao atualizar perfil.' });
+        } catch (err: unknown) {
+            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao atualizar perfil.' });
         } finally {
             setLoading(false);
         }
@@ -152,8 +152,8 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-        } catch {
-            setMessage({ type: 'error', text: err.message || 'Erro ao atualizar senha.' });
+        } catch (err: unknown) {
+            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao atualizar senha.' });
         } finally {
             setLoading(false);
         }

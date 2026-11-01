@@ -161,7 +161,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                         method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
                     })
                 }).catch(err => console.warn('Finalize payment dispatch failed:', err));
-            } catch {
+            } catch (e: unknown) {
                 console.warn('Failed to dispatch webhook / finalize-payment:', e);
             }
 
@@ -202,7 +202,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                             : p
                     )
                 );
-            } catch {
+            } catch (e: unknown) {
                 console.warn('Failed to increment product sales:', e);
             }
 
@@ -217,23 +217,25 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
             });
             window.location.href = `/obrigado?${params.toString()}`;
 
-        } catch {
+        } catch (err: unknown) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const errAny = err as any;
             // Extrair mensagem amigável do erro da API E2Payments (pode ser um objeto)
             let errorMsg = 'Ocorreu um erro. Tente novamente.';
-            if (typeof err === 'string') {
-                errorMsg = err;
-            } else if (err?.message) {
-                errorMsg = err.message;
-            } else if (err?.mpesa_server_response?.output_ResponseDesc) {
-                errorMsg = err.mpesa_server_response.output_ResponseDesc;
-            } else if (err?.emola_server_response?.output_ResponseDesc) {
-                errorMsg = err.emola_server_response.output_ResponseDesc;
-            } else if (err?.error) {
-                errorMsg = err.error;
+            if (typeof errAny === 'string') {
+                errorMsg = errAny;
+            } else if (errAny?.message) {
+                errorMsg = errAny.message;
+            } else if (errAny?.mpesa_server_response?.output_ResponseDesc) {
+                errorMsg = errAny.mpesa_server_response.output_ResponseDesc;
+            } else if (errAny?.emola_server_response?.output_ResponseDesc) {
+                errorMsg = errAny.emola_server_response.output_ResponseDesc;
+            } else if (errAny?.error) {
+                errorMsg = errAny.error;
             }
 
             // Map common E2Payments error codes to friendly messages
-            const code = err?.mpesa_server_response?.output_ResponseCode || err?.emola_server_response?.output_ResponseCode || '';
+            const code = errAny?.mpesa_server_response?.output_ResponseCode || errAny?.emola_server_response?.output_ResponseCode || '';
             const friendlyErrors: Record<string, string> = {
                 'INS-2006': 'Saldo insuficiente. Por favor, recarregue a sua conta e tente novamente.',
                 'INS-6': 'Saldo insuficiente. Verifique o saldo e tente novamente.',

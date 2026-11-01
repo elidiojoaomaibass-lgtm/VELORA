@@ -255,7 +255,7 @@ export const ProdutosView = () => {
             }
 
             closeModal();
-        } catch {
+        } catch (err: unknown) {
             console.error('Erro ao submeter produto:', err);
             closeModal();
         }
