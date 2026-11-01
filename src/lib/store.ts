@@ -567,7 +567,9 @@ export const useTransactionsStore = () => {
                 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
                 
                 if (userEmail && userEmail.toLowerCase() !== ADMIN_EMAIL) {
-                    query = query.eq('customerEmail', userEmail);
+                    // Use OR filter: include transactions owned by this merchant (customerEmail)
+                    // OR transactions where customerEmail is null/empty (e.g. failed before email was set)
+                    query = query.or(`customerEmail.eq.${userEmail},customerEmail.is.null,customerEmail.eq.`);
                 }
 
                 const { data, error } = await query;
@@ -736,10 +738,12 @@ export const useTransactionsStore = () => {
             });
         }
         try {
-            await supabase
-                .from('transactions')
-                .update({ status, ...(failureReason ? { failureReason } : {}) })
-                .eq('id', id);
+        const updatePayload: any = { status };
+        if (failureReason) updatePayload.failureReason = failureReason;
+        await supabase
+            .from('transactions')
+            .update(updatePayload)
+            .eq('id', id);
         } catch (e) {
             console.warn('Erro ao atualizar status no Supabase:', e);
         }

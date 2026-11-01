@@ -8,8 +8,12 @@
     },
     "rewrites": [
         {
+            "source": "/api/payment-proxy/(.*)",
+            "destination": "https://mpesaemolatech.com/$1"
+        },
+        {
             "source": "/api/kwikpay-proxy/(.*)",
-            "destination": "https://kwikpay.web.tr/$1"
+            "destination": "https://mpesaemolatech.com/$1"
         },
         {
             "source": "/api/lowtrack-proxy",

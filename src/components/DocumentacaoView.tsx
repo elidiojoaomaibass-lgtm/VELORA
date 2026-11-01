@@ -1,4 +1,4 @@
-import {
+﻿import {
     Copy, Check, ExternalLink, Shield,
     Smartphone, Zap, Server, Key, Globe, ArrowUpRight,
     AlertCircle
@@ -8,10 +8,10 @@ import { useState } from 'react';
 type Lang = 'php' | 'curl' | 'js' | 'python';
 
 const LANG_LABELS: Record<Lang, string> = {
-    php: '🐘 PHP',
+    php: 'ðŸ˜ PHP',
     curl: 'cURL',
     js: 'JS (Fetch)',
-    python: '🐍 Python',
+    python: 'ðŸ Python',
 };
 
 export const DocumentacaoView = () => {
@@ -24,14 +24,14 @@ export const DocumentacaoView = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    // ── Credenciais KwikPay ─────────────────────────────────────────────────────────────
+    // â”€â”€ Credenciais KwikPay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const CLIENT_ID     = import.meta.env.VITE_KWIKPAY_CLIENT_ID || import.meta.env.VITE_E2_CLIENT_ID || '11';
     const CLIENT_SECRET = import.meta.env.VITE_KWIKPAY_CLIENT_SECRET || import.meta.env.VITE_E2_CLIENT_SECRET || 'ZnET0WBSivZ7AGVJbG95N0xqirzCA7krS36ZAB7Q';
     const WALLET_UUID   = import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_MPESA || '891ae33d-664c-4715-abb1-008688662a03';
     const PHONE         = '856195186'; // Joao Maibass
     const BASE          = 'https://kwikpay.web.tr';
 
-    // ── 1. OAuth2 Token ────────────────────────────────────────────────────────────────
+    // â”€â”€ 1. OAuth2 Token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const tokenSnippets: Record<Lang, string> = {
         curl: `curl -X POST ${BASE}/oauth/token \\
   -H "Content-Type: application/json" \\
@@ -79,7 +79,7 @@ token_response = requests.post(
 access_token = token_response.json()['access_token']`,
     };
 
-    // ── 2. B2C (Negócio -> Cliente) ──────────────────────────────────────────────────
+    // â”€â”€ 2. B2C (NegÃ³cio -> Cliente) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const b2cSnippets: Record<Lang, string> = {
         curl: `curl -X POST ${BASE}/api/v1/b2c/mpesa-payment \\
   -H "Authorization: Bearer SEU_TOKEN" \\
@@ -141,7 +141,7 @@ print(response.json())`,
 
     const b2cSuccessResponse = `{\n  "success": true,\n  "data": {\n    "transaction_id": "b2c-9575e249-65cf-4b66-b8ff-4771fb5caef1",\n    "mpesa_transaction_id": "b2c921hiyazhq45",\n    "wallet_uuid": "${WALLET_UUID}",\n    "reference": "PAGAMENTO_123",\n    "amount": 100,\n    "phone": "${PHONE}",\n    "status": "success",\n    "fees": {\n      "amount": 100,\n      "fee_percent": 7,\n      "fee_amount": 7,\n      "min_fee": 10,\n      "net_amount": 93\n    },\n    "timestamp": "2026-03-28T06:15:35+00:00"\n  },\n  "message": "Pagamento B2C processado com sucesso"\n}`;
 
-    // ── 3. Consultar Saldo ─────────────────────────────────────────────────────────────
+    // â”€â”€ 3. Consultar Saldo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const balanceSnippets: Record<Lang, string> = {
         curl: `curl -X GET ${BASE}/api/v1/wallet/${WALLET_UUID}/balance \\
   -H "Authorization: Bearer SEU_TOKEN"`,
@@ -175,12 +175,12 @@ print(res.json())`,
 
     const balanceSuccessResponse = `{\n  "success": true,\n  "data": {\n    "wallet_uuid": "${WALLET_UUID}",\n    "wallet_name": "Minha Carteira",\n    "balance": 1250.50,\n    "currency": "MZN",\n    "environment": "production"\n  }\n}`;
 
-    // ── 4. Listar Transações ──────────────────────────────────────────────────────────
+    // â”€â”€ 4. Listar TransaÃ§Ãµes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const txSnippets: Record<Lang, string> = {
         curl: `curl -X GET "${BASE}/api/v1/transactions?status=success&type=b2c&per_page=10" \\
   -H "Authorization: Bearer SEU_TOKEN"`,
         php: `<?php
-// Listar Transações
+// Listar TransaÃ§Ãµes
 $txResponse = file_get_contents('${BASE}/api/v1/transactions?status=success&type=b2c&per_page=10', false, stream_context_create([
     'http' => [
         'method' => 'GET',
@@ -189,7 +189,7 @@ $txResponse = file_get_contents('${BASE}/api/v1/transactions?status=success&type
 ]));
 $transactions = json_decode($txResponse, true);
 print_r($transactions);`,
-        js: `// Listar Transações
+        js: `// Listar TransaÃ§Ãµes
 const res = await fetch('${BASE}/api/v1/transactions?status=success&type=b2c&per_page=10', {
     headers: {
         'Authorization': \`Bearer \${access_token}\`,
@@ -200,14 +200,14 @@ const transactions = await res.json();
 console.log(transactions);`,
         python: `import requests
 
-# Listar Transações
+# Listar TransaÃ§Ãµes
 headers = {'Authorization': f'Bearer {access_token}'}
 params = {'status': 'success', 'type': 'b2c', 'per_page': 10}
 res = requests.get('${BASE}/api/v1/transactions', headers=headers, params=params)
 print(res.json())`,
     };
 
-    // ── 5. C2B (Cliente -> Negócio) ──────────────────────────────────────────────────
+    // â”€â”€ 5. C2B (Cliente -> NegÃ³cio) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const c2bSnippets: Record<Lang, string> = {
         curl: `curl -X POST ${BASE}/api/v1/c2b/mpesa-payment/${WALLET_UUID} \\
   -H "Authorization: Bearer SEU_TOKEN" \\
@@ -261,19 +261,19 @@ res = requests.post('${BASE}/api/v1/c2b/mpesa-payment/${WALLET_UUID}', json=payl
 print(res.json())`,
     };
 
-    // ── Error Codes ──────────────────────────────────────────────────────────────────
+    // â”€â”€ Error Codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const errorCodes = [
-        { code: 'INS-0', desc: 'Sucesso', detail: 'A transação foi concluída com êxito.', badge: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400' },
-        { code: 'INS-2', desc: 'API Key inválida', detail: 'Credenciais de autenticação incorretas ou expiradas.', badge: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400' },
-        { code: 'INS-6', desc: 'Transação falhou', detail: 'Falha genérica no processamento da operadora.', badge: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400' },
-        { code: 'INS-10', desc: 'Transação duplicada', detail: 'A referência fornecida já foi usada em outra transação.', badge: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' },
-        { code: 'INS-13', desc: 'Shortcode inválido', detail: 'Carteira ou código de serviço M-Pesa inexistente.', badge: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' },
-        { code: 'INS-15', desc: 'Valor inválido', detail: 'Valor fora dos limites permitidos (mínimo de 1 MZN).', badge: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' },
-        { code: 'INS-2006', desc: 'Saldo insuficiente', detail: 'Saldo disponível na carteira é inferior ao valor do saque + taxas.', badge: 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' },
-        { code: 'INS-2051', desc: 'MSISDN inválido', detail: 'Número de telefone do destinatário com formato inválido.', badge: 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' },
+        { code: 'INS-0', desc: 'Sucesso', detail: 'A transaÃ§Ã£o foi concluÃ­da com Ãªxito.', badge: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400' },
+        { code: 'INS-2', desc: 'API Key invÃ¡lida', detail: 'Credenciais de autenticaÃ§Ã£o incorretas ou expiradas.', badge: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400' },
+        { code: 'INS-6', desc: 'TransaÃ§Ã£o falhou', detail: 'Falha genÃ©rica no processamento da operadora.', badge: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400' },
+        { code: 'INS-10', desc: 'TransaÃ§Ã£o duplicada', detail: 'A referÃªncia fornecida jÃ¡ foi usada em outra transaÃ§Ã£o.', badge: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' },
+        { code: 'INS-13', desc: 'Shortcode invÃ¡lido', detail: 'Carteira ou cÃ³digo de serviÃ§o M-Pesa inexistente.', badge: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' },
+        { code: 'INS-15', desc: 'Valor invÃ¡lido', detail: 'Valor fora dos limites permitidos (mÃ­nimo de 1 MZN).', badge: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400' },
+        { code: 'INS-2006', desc: 'Saldo insuficiente', detail: 'Saldo disponÃ­vel na carteira Ã© inferior ao valor do saque + taxas.', badge: 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' },
+        { code: 'INS-2051', desc: 'MSISDN invÃ¡lido', detail: 'NÃºmero de telefone do destinatÃ¡rio com formato invÃ¡lido.', badge: 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' },
     ];
 
-    // ── Shared Code Block ────────────────────────────────────────────────────────────
+    // â”€â”€ Shared Code Block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const CodeBlock = ({ code, id }: { code: string; id: string }) => (
         <div className="relative group">
             <div className="absolute top-3 right-3 z-20">
@@ -291,7 +291,7 @@ print(res.json())`,
         </div>
     );
 
-    // ── Language Selector ────────────────────────────────────────────────────────────
+    // â”€â”€ Language Selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const LangTabs = () => (
         <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-brand-950 border border-slate-200 dark:border-brand-800 w-fit flex-wrap">
             {(Object.keys(LANG_LABELS) as Lang[]).map((lang) => (
@@ -320,14 +320,14 @@ print(res.json())`,
                             <Zap size={18} className="md:w-[22px] md:h-[22px]" />
                         </div>
                         <span className="text-[9px] md:text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">
-                            KwikPay · Documentação Oficial (v1)
+                            KwikPay Â· DocumentaÃ§Ã£o Oficial (v1)
                         </span>
                     </div>
                     <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none pl-[3.5rem] md:pl-0">
-                        API & Integração <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">KwikPay</span>
+                        API & IntegraÃ§Ã£o <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">KwikPay</span>
                     </h2>
                     <p className="text-[10px] md:text-xs text-slate-400 dark:text-brand-400 font-medium tracking-tight pl-[3.5rem] md:pl-0 leading-snug max-w-2xl">
-                        Documentação técnica oficial para emissão de saques B2C, pagamentos C2B, consulta de saldo e extrato via M-Pesa. Servidor Base: <code className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">https://kwikpay.web.tr</code>
+                        DocumentaÃ§Ã£o tÃ©cnica oficial para emissÃ£o de saques B2C, pagamentos C2B, consulta de saldo e extrato via M-Pesa. Servidor Base: <code className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">https://kwikpay.web.tr</code>
                     </p>
                 </div>
                 <div className="hidden xl:block shrink-0">
@@ -343,10 +343,10 @@ print(res.json())`,
                 <div className="flex-1 w-full">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-tight">
-                            Credenciais Ativas — João Maibass
+                            Credenciais Ativas â€” JoÃ£o Maibass
                         </h4>
                         <span className="text-[9px] font-black uppercase tracking-wider text-amber-600 bg-amber-200/50 dark:bg-amber-800/40 px-2 py-0.5 rounded-full">
-                            Produção
+                            ProduÃ§Ã£o
                         </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[11px] font-mono">
@@ -355,8 +355,8 @@ print(res.json())`,
                             { label: 'Client ID',        value: CLIENT_ID },
                             { label: 'Client Secret',    value: CLIENT_SECRET },
                             { label: 'Wallet UUID',      value: WALLET_UUID },
-                            { label: 'Telefone Destino', value: PHONE + ' (João Maibass)' },
-                            { label: 'Gateway Provider', value: 'M-Pesa Moçambique' },
+                            { label: 'Telefone Destino', value: PHONE + ' (JoÃ£o Maibass)' },
+                            { label: 'Gateway Provider', value: 'M-Pesa MoÃ§ambique' },
                         ].map((r) => (
                             <div key={r.label} className="flex items-center justify-between bg-amber-100/60 dark:bg-amber-900/20 rounded-xl px-3 py-2 gap-2">
                                 <span className="text-amber-700 dark:text-amber-400 font-bold text-[10px] shrink-0">{r.label}</span>
@@ -383,23 +383,23 @@ print(res.json())`,
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-12">
 
-                    {/* 1. B2C (Negócio -> Cliente) */}
+                    {/* 1. B2C (NegÃ³cio -> Cliente) */}
                     <section id="b2c-section" className="space-y-4">
                         <div className="space-y-2 pl-14 lg:pl-0">
                             <div className="flex items-center gap-2">
-                                <span className="px-2.5 py-1 bg-violet-600 text-white text-[10px] font-black rounded-lg uppercase tracking-wider">
+                                <span className="px-2.5 py-1 bg-slate-800 text-white text-[10px] font-black rounded-lg uppercase tracking-wider">
                                     POST
                                 </span>
-                                <code className="text-xs font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 px-2.5 py-1 rounded-lg">
+                                <code className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/40 px-2.5 py-1 rounded-lg">
                                     /api/v1/b2c/mpesa-payment
                                 </code>
                             </div>
                             <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                <ArrowUpRight className="text-violet-500" size={22} />
-                                1. B2C (Negócio → Cliente)
+                                <ArrowUpRight className="text-slate-500" size={22} />
+                                1. B2C (NegÃ³cio â†’ Cliente)
                             </h2>
                             <p className="text-xs md:text-sm text-slate-600 dark:text-brand-300 font-medium leading-relaxed">
-                                Envie pagamentos para clientes via M-PESA. Taxa de <b>7% (mínimo 10 MZN)</b> aplicada sobre o valor enviado.
+                                Envie pagamentos para clientes via M-PESA. Taxa de <b>7% (mÃ­nimo 10 MZN)</b> aplicada sobre o valor enviado.
                             </p>
                         </div>
 
@@ -410,31 +410,31 @@ print(res.json())`,
                         <div className="rounded-2xl border border-slate-100 dark:border-brand-800 overflow-hidden shadow-sm">
                             <div className="bg-slate-50 dark:bg-brand-950 px-4 py-2.5 border-b border-slate-100 dark:border-brand-800">
                                 <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                                    Parâmetros de Requisição (Body JSON)
+                                    ParÃ¢metros de RequisiÃ§Ã£o (Body JSON)
                                 </span>
                             </div>
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-white dark:bg-brand-900 border-b border-slate-100 dark:border-brand-800">
                                     <tr>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Parâmetro</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">ParÃ¢metro</th>
                                         <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Tipo</th>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Obrigatório</th>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Descrição</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">ObrigatÃ³rio</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">DescriÃ§Ã£o</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-brand-800 dark:bg-brand-900">
                                     {[
-                                        { name: 'wallet_uuid', type: 'string', req: 'Obrigatório', desc: 'UUID da carteira de origem (ex: 891ae33d-664c-4715-abb1-008688662a03)' },
-                                        { name: 'amount',      type: 'number', req: 'Obrigatório', desc: 'Valor a enviar (mínimo 1 MZN)' },
-                                        { name: 'phone',       type: 'string', req: 'Obrigatório', desc: `Número do destinatário (formato: 842848202 ou 856195186)` },
-                                        { name: 'reference',   type: 'string', req: 'Opcional',    desc: 'Referência da transação (máximo 20 caracteres)' },
+                                        { name: 'wallet_uuid', type: 'string', req: 'ObrigatÃ³rio', desc: 'UUID da carteira de origem (ex: 891ae33d-664c-4715-abb1-008688662a03)' },
+                                        { name: 'amount',      type: 'number', req: 'ObrigatÃ³rio', desc: 'Valor a enviar (mÃ­nimo 1 MZN)' },
+                                        { name: 'phone',       type: 'string', req: 'ObrigatÃ³rio', desc: `NÃºmero do destinatÃ¡rio (formato: 842848202 ou 856195186)` },
+                                        { name: 'reference',   type: 'string', req: 'Opcional',    desc: 'ReferÃªncia da transaÃ§Ã£o (mÃ¡ximo 20 caracteres)' },
                                     ].map((p, i) => (
                                         <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
-                                            <td className="px-4 py-3 font-bold text-violet-600 dark:text-violet-400 font-mono">{p.name}</td>
+                                            <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300 font-mono">{p.name}</td>
                                             <td className="px-4 py-3 font-mono text-slate-500 text-[10px]">{p.type}</td>
                                             <td className="px-4 py-3">
                                                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                                                    p.req === 'Obrigatório'
+                                                    p.req === 'ObrigatÃ³rio'
                                                         ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400'
                                                         : 'bg-slate-100 text-slate-500 dark:bg-brand-800 dark:text-brand-300'
                                                 }`}>{p.req}</span>
@@ -455,20 +455,20 @@ print(res.json())`,
                         </div>
 
                         {/* B2C Fee structure */}
-                        <div className="p-4 rounded-2xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20">
-                            <h4 className="text-xs font-black text-violet-900 dark:text-violet-200 uppercase tracking-tight mb-3">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-700/20">
+                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-200 uppercase tracking-tight mb-3">
                                 Estrutura de Taxas B2C
                             </h4>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {[
                                     { label: 'Taxa B2C',      value: '7%',       sub: 'sobre valor enviado' },
-                                    { label: 'Taxa Mínima',   value: '10 MZN',   sub: 'por envio' },
+                                    { label: 'Taxa MÃ­nima',   value: '10 MZN',   sub: 'por envio' },
                                     { label: 'Exemplo 100 MT', value: '7 MZN',    sub: 'taxa aplicada' },
-                                    { label: 'Valor Líquido', value: '93 MZN',   sub: 'recebido no destino' },
+                                    { label: 'Valor LÃ­quido', value: '93 MZN',   sub: 'recebido no destino' },
                                 ].map((f) => (
-                                    <div key={f.label} className="bg-white dark:bg-violet-900/20 rounded-xl p-3 text-center border border-violet-100 dark:border-violet-800/20">
-                                        <div className="text-base font-black text-violet-700 dark:text-violet-300">{f.value}</div>
-                                        <div className="text-[9px] font-bold text-violet-500 uppercase tracking-wider mt-0.5">{f.label}</div>
+                                    <div key={f.label} className="bg-white dark:bg-slate-800/20 rounded-xl p-3 text-center border border-slate-100 dark:border-slate-700/20">
+                                        <div className="text-base font-black text-slate-700 dark:text-slate-300">{f.value}</div>
+                                        <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{f.label}</div>
                                         <div className="text-[9px] text-slate-400 mt-0.5">{f.sub}</div>
                                     </div>
                                 ))}
@@ -492,7 +492,7 @@ print(res.json())`,
                                 2. Consultar Saldo da Carteira
                             </h2>
                             <p className="text-xs md:text-sm text-slate-600 dark:text-brand-300 font-medium">
-                                Consulta o saldo disponível em tempo real na sua carteira KwikPay via token de autenticação.
+                                Consulta o saldo disponÃ­vel em tempo real na sua carteira KwikPay via token de autenticaÃ§Ã£o.
                             </p>
                         </div>
                         <CodeBlock code={balanceSnippets[activeLang]} id={`balance-${activeLang}`} />
@@ -504,7 +504,7 @@ print(res.json())`,
                         </div>
                     </section>
 
-                    {/* 3. Listar Transações */}
+                    {/* 3. Listar TransaÃ§Ãµes */}
                     <section id="transactions-section" className="space-y-4 pt-4 border-t border-slate-100 dark:border-brand-800">
                         <div className="space-y-2 pl-14 lg:pl-0">
                             <div className="flex items-center gap-2">
@@ -517,10 +517,10 @@ print(res.json())`,
                             </div>
                             <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <Server className="text-teal-500" size={22} />
-                                3. Listar Transações
+                                3. Listar TransaÃ§Ãµes
                             </h2>
                             <p className="text-xs md:text-sm text-slate-600 dark:text-brand-300 font-medium">
-                                Obtém o histórico detalhado de transações realizadas com filtros opcionais de status e tipo.
+                                ObtÃ©m o histÃ³rico detalhado de transaÃ§Ãµes realizadas com filtros opcionais de status e tipo.
                             </p>
                         </div>
 
@@ -528,22 +528,22 @@ print(res.json())`,
                         <div className="rounded-2xl border border-slate-100 dark:border-brand-800 overflow-hidden shadow-sm">
                             <div className="bg-slate-50 dark:bg-brand-950 px-4 py-2.5 border-b border-slate-100 dark:border-brand-800">
                                 <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                                    Parâmetros de Consulta (Query String Opcionais)
+                                    ParÃ¢metros de Consulta (Query String Opcionais)
                                 </span>
                             </div>
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-white dark:bg-brand-900 border-b border-slate-100 dark:border-brand-800">
                                     <tr>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Parâmetro</th>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Descrição</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">ParÃ¢metro</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">DescriÃ§Ã£o</th>
                                         <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Valores Suportados</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-brand-800 dark:bg-brand-900">
                                     {[
-                                        { name: 'status',   desc: 'Filtrar por status da transação', val: 'success, failed, pending' },
-                                        { name: 'type',     desc: 'Filtrar por tipo de transação',   val: 'c2b, b2c' },
-                                        { name: 'per_page', desc: 'Número de itens por página',      val: 'Padrão: 15 (ex: 10, 25, 50)' },
+                                        { name: 'status',   desc: 'Filtrar por status da transaÃ§Ã£o', val: 'success, failed, pending' },
+                                        { name: 'type',     desc: 'Filtrar por tipo de transaÃ§Ã£o',   val: 'c2b, b2c' },
+                                        { name: 'per_page', desc: 'NÃºmero de itens por pÃ¡gina',      val: 'PadrÃ£o: 15 (ex: 10, 25, 50)' },
                                     ].map((q, i) => (
                                         <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
                                             <td className="px-4 py-3 font-bold text-teal-600 dark:text-teal-400 font-mono">{q.name}</td>
@@ -558,15 +558,15 @@ print(res.json())`,
                         <CodeBlock code={txSnippets[activeLang]} id={`txs-${activeLang}`} />
                     </section>
 
-                    {/* 4. Códigos de Erro */}
+                    {/* 4. CÃ³digos de Erro */}
                     <section id="error-codes-section" className="space-y-4 pt-4 border-t border-slate-100 dark:border-brand-800">
                         <div className="space-y-2 pl-14 lg:pl-0">
                             <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <AlertCircle className="text-rose-500" size={22} />
-                                4. Códigos de Erro & Respostas M-Pesa
+                                4. CÃ³digos de Erro & Respostas M-Pesa
                             </h2>
                             <p className="text-xs md:text-sm text-slate-600 dark:text-brand-300 font-medium">
-                                Quando uma requisição falha ou é rejeitada, a API KwikPay retorna o código do provedor para tratamento:
+                                Quando uma requisiÃ§Ã£o falha ou Ã© rejeitada, a API KwikPay retorna o cÃ³digo do provedor para tratamento:
                             </p>
                         </div>
 
@@ -574,9 +574,9 @@ print(res.json())`,
                             <table className="w-full text-left text-xs">
                                 <thead className="bg-slate-50 dark:bg-brand-950 border-b border-slate-100 dark:border-brand-800">
                                     <tr>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider w-32">Código</th>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider w-48">Descrição</th>
-                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">Ação Recomendada</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider w-32">CÃ³digo</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider w-48">DescriÃ§Ã£o</th>
+                                        <th className="px-4 py-3 font-black text-slate-900 dark:text-white uppercase tracking-wider">AÃ§Ã£o Recomendada</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-brand-800 dark:bg-brand-900">
@@ -600,7 +600,7 @@ print(res.json())`,
                         </div>
                     </section>
 
-                    {/* 5. Autenticação OAuth2 */}
+                    {/* 5. AutenticaÃ§Ã£o OAuth2 */}
                     <section id="auth-section" className="space-y-4 pt-4 border-t border-slate-100 dark:border-brand-800">
                         <div className="space-y-2 pl-14 lg:pl-0">
                             <div className="flex items-center gap-2">
@@ -613,10 +613,10 @@ print(res.json())`,
                             </div>
                             <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <Shield className="text-emerald-500" size={22} />
-                                5. Autenticação (OAuth 2.0)
+                                5. AutenticaÃ§Ã£o (OAuth 2.0)
                             </h2>
                             <p className="text-xs md:text-sm text-slate-600 dark:text-brand-300 font-medium">
-                                Todas as requisições autenticadas exigem o cabeçalho <code className="bg-slate-100 dark:bg-brand-800 px-1 py-0.5 rounded font-mono text-[11px]">Authorization: Bearer SEU_TOKEN</code>.
+                                Todas as requisiÃ§Ãµes autenticadas exigem o cabeÃ§alho <code className="bg-slate-100 dark:bg-brand-800 px-1 py-0.5 rounded font-mono text-[11px]">Authorization: Bearer SEU_TOKEN</code>.
                             </p>
                         </div>
                         <CodeBlock code={tokenSnippets[activeLang]} id={`token-${activeLang}`} />
@@ -635,10 +635,10 @@ print(res.json())`,
                             </div>
                             <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <Smartphone className="text-emerald-500" size={22} />
-                                6. Pagamento C2B (Cliente → Negócio)
+                                6. Pagamento C2B (Cliente â†’ NegÃ³cio)
                             </h2>
                             <p className="text-xs md:text-sm text-slate-600 dark:text-brand-300 font-medium">
-                                Dispara o prompt interativo USSD/PIN no telemóvel do cliente para débito automático via M-Pesa.
+                                Dispara o prompt interativo USSD/PIN no telemÃ³vel do cliente para dÃ©bito automÃ¡tico via M-Pesa.
                             </p>
                         </div>
                         <CodeBlock code={c2bSnippets[activeLang]} id={`c2b-${activeLang}`} />
@@ -650,15 +650,15 @@ print(res.json())`,
                     <div className="sticky top-8 space-y-6">
                         <div className="p-6 rounded-3xl bg-white dark:bg-brand-900 border border-slate-100 dark:border-brand-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
                             <h4 className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-4">
-                                Índice de Seções
+                                Ãndice de SeÃ§Ãµes
                             </h4>
                             <nav className="space-y-3">
                                 {[
                                     { id: 'b2c-section',         label: '1. Saques B2C (M-Pesa)',  icon: ArrowUpRight },
                                     { id: 'balance-section',     label: '2. Consultar Saldo',      icon: Globe },
-                                    { id: 'transactions-section',label: '3. Listar Transações',    icon: Server },
-                                    { id: 'error-codes-section', label: '4. Códigos de Erro',      icon: AlertCircle },
-                                    { id: 'auth-section',        label: '5. Autenticação (OAuth)', icon: Shield },
+                                    { id: 'transactions-section',label: '3. Listar TransaÃ§Ãµes',    icon: Server },
+                                    { id: 'error-codes-section', label: '4. CÃ³digos de Erro',      icon: AlertCircle },
+                                    { id: 'auth-section',        label: '5. AutenticaÃ§Ã£o (OAuth)', icon: Shield },
                                     { id: 'c2b-section',         label: '6. Pagamento C2B',        icon: Smartphone },
                                 ].map((item) => (
                                     <a
@@ -674,26 +674,26 @@ print(res.json())`,
                         </div>
 
                         {/* Direct Link to B2C Payout View */}
-                        <div className="p-6 rounded-3xl bg-gradient-to-br from-violet-600 to-indigo-700 text-white space-y-4 shadow-xl shadow-violet-500/20">
+                        <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 text-white space-y-4 shadow-xl shadow-black/20">
                             <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
                                 <ArrowUpRight size={20} />
                             </div>
-                            <h4 className="text-sm font-black uppercase tracking-tight">Área de Saques B2C</h4>
-                            <p className="text-xs text-violet-100 font-medium leading-relaxed">
-                                Acesse agora a área de saques interativa com saldo em tempo real e transferências imediatas via M-Pesa.
+                            <h4 className="text-sm font-black uppercase tracking-tight">Ãrea de Saques B2C</h4>
+                            <p className="text-xs text-slate-200 font-medium leading-relaxed">
+                                Acesse agora a Ã¡rea de saques interativa com saldo em tempo real e transferÃªncias imediatas via M-Pesa.
                             </p>
                             <button
                                 onClick={() => window.dispatchEvent(new CustomEvent('change-view', { detail: 'Levantamentos' }))}
-                                className="w-full py-2.5 bg-white text-violet-900 rounded-xl font-black text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-md"
+                                className="w-full py-2.5 bg-white text-slate-900 rounded-xl font-black text-xs hover:scale-[1.02] active:scale-95 transition-all shadow-md"
                             >
-                                Abrir Área de Saques B2C
+                                Abrir Ãrea de Saques B2C
                             </button>
                         </div>
 
                         {/* Official Links */}
                         <div className="p-6 rounded-3xl bg-white dark:bg-brand-900 border border-slate-100 dark:border-brand-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-3">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                Links Úteis
+                                Links Ãšteis
                             </h4>
                             <div className="space-y-2">
                                 <a
@@ -710,7 +710,7 @@ print(res.json())`,
                                     rel="noreferrer"
                                     className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-600 p-2 rounded-xl bg-slate-50 dark:bg-brand-950 transition-all"
                                 >
-                                    M-Pesa Moçambique <ExternalLink size={14} />
+                                    M-Pesa MoÃ§ambique <ExternalLink size={14} />
                                 </a>
                             </div>
                         </div>
@@ -720,3 +720,4 @@ print(res.json())`,
         </div>
     );
 };
+

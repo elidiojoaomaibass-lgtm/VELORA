@@ -39,8 +39,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         for (const token of tokens) {
           await sendPushNotificationV1(token, {
-            title: 'Você recebeu um novo pedido! 🎉',
-            body: `Venda aprovada de ${val} MT via ${methodStr}`,
+            title: 'VELORA — Nova Venda! 🎉',
+            body: `Venda aprovada: ${val} MT via ${methodStr}`,
           });
         }
         results.push(`FCM: ${tokens.length} dispositivo(s) notificado(s).`);

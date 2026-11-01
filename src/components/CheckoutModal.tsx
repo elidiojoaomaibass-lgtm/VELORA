@@ -97,8 +97,8 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
         try {
             const e2p = new E2Payments();
             const walletId = method === 'mpesa'
-                ? (import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_MPESA || '')
-                : (import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_EMOLA || '');
+                ? (import.meta.env.VITE_PAYMENT_WALLET_MPESA || import.meta.env.VITE_PAYMENT_WALLET_ID || import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_MPESA || '807267')
+                : (import.meta.env.VITE_PAYMENT_WALLET_EMOLA || import.meta.env.VITE_PAYMENT_WALLET_ID || import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_EMOLA || '257096');
 
             const result = await e2p.c2bPayment(
                 method,
@@ -497,6 +497,49 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                                                         value={paymentPhone}
                                                         onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
                                                         className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-base focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-300"
+                                                    />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* e-Mola */}
+                                    <div
+                                        onClick={() => {
+                                            setMethod('emola');
+                                        }}
+                                        className={cn(
+                                            "rounded-xl border transition-all cursor-pointer overflow-hidden",
+                                            method === 'emola' ? "border-orange-500 ring-1 ring-orange-500 bg-orange-50/10" : "border-slate-200 hover:border-slate-300 bg-white"
+                                        )}
+                                    >
+                                        <div className="p-4 flex items-center gap-3">
+                                            <div className={cn(
+                                                "h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all",
+                                                method === 'emola' ? "border-orange-500" : "border-slate-300"
+                                            )}>
+                                                {method === 'emola' && <div className="h-2 w-2 rounded-full bg-orange-500" />}
+                                            </div>
+                                            <div className="h-8 w-8 p-0.5 bg-white rounded-lg border border-slate-100 flex items-center justify-center overflow-hidden">
+                                                <img src="/emola_logo.png" alt="e-Mola" className="w-full h-full object-cover" />
+                                            </div>
+                                            <span className="text-xs font-black text-slate-900 tracking-tight">e-Mola</span>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {method === 'emola' && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    className="px-4 pb-4 space-y-2"
+                                                >
+                                                    <label className="text-[10px] font-black text-slate-500 tracking-widest leading-none">Número de celular (Movitel)*</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="86 xxx xxxx ou 87 xxx xxxx"
+                                                        value={paymentPhone}
+                                                        onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
+                                                        className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-base focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300"
                                                     />
                                                 </motion.div>
                                             )}

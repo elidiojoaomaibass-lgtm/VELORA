@@ -36,16 +36,17 @@ function App() {
   });
 
   const [activeView, setActiveView] = useState<ViewType>(() => {
-    // Use sessionStorage: persiste enquanto a aba está aberta (minimizar mantém), mas reseta ao fechar o browser
-    // Também verificamos um timestamp para resetar após 30 minutos de inatividade
-    const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos
-    const saved = sessionStorage.getItem('velora_active_view');
-    const lastActive = sessionStorage.getItem('velora_last_active');
+    // Usa localStorage para persistir a aba activa mesmo após F5/refresh.
+    // O timeout de 30min de inatividade só se aplica quando o utilizador fecha o browser.
+    const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos
+    const saved = localStorage.getItem('velora_active_view');
+    const lastActive = localStorage.getItem('velora_last_active');
 
     if (saved && lastActive) {
       const elapsed = Date.now() - parseInt(lastActive, 10);
-      if (elapsed < SESSION_TIMEOUT_MS) {
-        const validViews = ["ThankYou", "Dashboard", "Vendas", "Produtos", "Afiliados", "Mercado", "Pagamentos", "Levantamentos", "Premiações", "Integrações", "Configurações", "Documentação", "B2C Config"];
+      // Apenas reseta se passou mais de 30 minutos desde a última actividade
+      if (elapsed < INACTIVITY_TIMEOUT_MS) {
+        const validViews = ["ThankYou", "Dashboard", "Vendas", "Produtos", "Afiliados", "Mercado", "Pagamentos", "Levantamentos", "Premiações", "Integrações", "Configurações", "Documentação", "Análise"];
         if (validViews.includes(saved)) return saved as ViewType;
       }
     }
@@ -62,30 +63,35 @@ function App() {
   }, []);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    return document.documentElement.classList.contains('dark');
+    // Lê do localStorage — a classe 'dark' já foi aplicada ao HTML pelo script no index.html
+    try {
+      return localStorage.getItem('velora_dark_mode') === 'true';
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {
-    // Guarda a aba atual e o timestamp na sessionStorage (reset automático ao fechar o browser)
-    sessionStorage.setItem('velora_active_view', activeView);
-    sessionStorage.setItem('velora_last_active', Date.now().toString());
+    // Persiste a aba activa e o timestamp no localStorage → sobrevive a F5/refresh
+    localStorage.setItem('velora_active_view', activeView);
+    localStorage.setItem('velora_last_active', Date.now().toString());
   }, [activeView]);
 
   // Atualiza o timestamp de atividade ao focar a janela (para detetar inatividade longa)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
-        const lastActive = sessionStorage.getItem('velora_last_active');
+        const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+        const lastActive = localStorage.getItem('velora_last_active');
         if (lastActive) {
           const elapsed = Date.now() - parseInt(lastActive, 10);
-          if (elapsed >= SESSION_TIMEOUT_MS) {
+          if (elapsed >= INACTIVITY_TIMEOUT_MS) {
             // Mais de 30 minutos inativo → volta ao Dashboard
             setActiveView('Dashboard');
-            sessionStorage.setItem('velora_active_view', 'Dashboard');
+            localStorage.setItem('velora_active_view', 'Dashboard');
           }
         }
-        sessionStorage.setItem('velora_last_active', Date.now().toString());
+        localStorage.setItem('velora_last_active', Date.now().toString());
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -196,7 +202,12 @@ function App() {
     }
   }, [isDarkMode]);
 
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+  const toggleDarkMode = () => {
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    // Persiste no localStorage para sobreviver ao refresh
+    try { localStorage.setItem('velora_dark_mode', String(next)); } catch {}
+  };
 
 
   useEffect(() => {
@@ -251,7 +262,7 @@ function App() {
   useEffect(() => {
     if (!session) return;
     const unsubscribe = onFcmMessage((payload: any) => {
-      const title = payload?.notification?.title || 'Nova notificação';
+      const title = payload?.notification?.title || 'VELORA — Nova Venda! 🎉';
       const body = payload?.notification?.body || '';
       // Show browser notification even when app is in foreground
       if (Notification.permission === 'granted') {
@@ -336,9 +347,9 @@ function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('velora_fake_session');
-    // Ao fazer logout, apaga a aba guardada → próximo login sempre começa no Dashboard
-    sessionStorage.removeItem('velora_active_view');
-    sessionStorage.removeItem('velora_last_active');
+    // Ao fazer logout, limpa a aba guardada → próximo login começa sempre no Dashboard
+    localStorage.removeItem('velora_active_view');
+    localStorage.removeItem('velora_last_active');
     setActiveView('Dashboard');
     setSession(null);
   };
@@ -347,7 +358,7 @@ function App() {
   if (!sessionChecked) {
     // Show a loading indicator while authentication status is being determined
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#fafbff] dark:bg-[#0f0525]">
+      <div className="flex items-center justify-center min-h-screen bg-[#fafbff] dark:bg-[#0c1220]">
         <span className="text-xl font-medium text-gray-700 dark:text-gray-200">Carregando...</span>
       </div>
     );
@@ -380,7 +391,7 @@ function App() {
   }
 
   return (
-    <div className="flex bg-[#fafbff] dark:bg-[#0f0525] min-h-screen font-sans transition-colors duration-500 overflow-x-hidden relative">
+    <div className="flex bg-[#fafbff] dark:bg-[#0c1220] min-h-screen font-sans transition-colors duration-500 overflow-x-hidden relative">
       {/* Premium Ambient Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-500/5 dark:bg-emerald-600/10 rounded-full blur-[120px] animate-pulse-slow" />
@@ -438,7 +449,6 @@ function App() {
           {activeView === "Análise" && <Views.Análise />}
           {activeView === "Configurações" && <Views.Configuracoes onLogout={handleLogout} />}
           {activeView === "Documentação" && <Views.Documentacao />}
-          {activeView === "B2C Config" && <Views.B2CConfig />}
         </div>
       </main>
 

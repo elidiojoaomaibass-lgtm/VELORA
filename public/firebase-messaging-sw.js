@@ -5,9 +5,9 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-com
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDhIwBjlR_YEqbsZTx_TT64tO_c8-bhR6M',
-  authDomain: 'velora-b9300.firebaseapp.com',
-  projectId: 'velora-b9300',
-  storageBucket: 'velora-b9300.firebasestorage.app',
+  authDomain: 'evolux-b9300.firebaseapp.com',
+  projectId: 'evolux-b9300',
+  storageBucket: 'evolux-b9300.firebasestorage.app',
   messagingSenderId: '414354486042',
   appId: '1:414354486042:web:53f0d264b1f059570532a3'
 };
@@ -18,13 +18,15 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const title = payload.notification?.title || 'Nova notificação';
+  const title = payload.notification?.title || 'VELORA — Nova Venda! 🎉';
   const options = {
     body: payload.notification?.body || '',
     icon: '/logo.png',
     badge: '/logo.png',
     image: '/logo.png',
-    data: payload.data || {}
+    data: payload.data || {},
+    vibrate: [200, 100, 200],
+    requireInteraction: false
   };
   self.registration.showNotification(title, options);
 });

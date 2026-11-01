@@ -24,12 +24,13 @@ const ERROR_DESCRIPTIONS: Record<string, string> = {
   'INS-10': 'Transação duplicada (referência já processada)',
   'INS-13': 'Shortcode inválido ou inativo',
   'INS-15': 'Valor inválido para envio (mínimo 1 MZN)',
-  'INS-2006': 'Saldo insuficiente na carteira KwikPay',
+  'INS-2006': 'Saldo insuficiente na carteira do gateway',
   'INS-2051': 'MSISDN (número de telefone) inválido',
 };
 
 async function getAccessToken(clientId: string, clientSecret: string): Promise<string> {
-  const tokenRes = await fetch('https://kwikpay.web.tr/oauth/token', {
+  const oauthUrl = process.env.PAYMENT_OAUTH_URL || 'https://mpesaemolatech.com/oauth/token';
+  const tokenRes = await fetch(oauthUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,7 +45,7 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 
   const tokenData = await tokenRes.json().catch(() => ({}));
   if (!tokenRes.ok || !tokenData.access_token) {
-    const errorMsg = tokenData.message || tokenData.error || 'Falha ao autenticar com KwikPay';
+    const errorMsg = tokenData.message || tokenData.error_description || tokenData.error || 'Falha ao autenticar com o gateway de pagamento';
     throw new Error(errorMsg);
   }
 
@@ -62,71 +63,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const clientId =
-    process.env.KWIKPAY_CLIENT_ID ||
-    process.env.VITE_KWIKPAY_CLIENT_ID ||
-    process.env.E2_CLIENT_ID ||
-    process.env.VITE_E2_CLIENT_ID ||
-    '11';
+    process.env.PAYMENT_CLIENT_ID ||
+    process.env.VITE_PAYMENT_CLIENT_ID ||
+    '';
 
   const clientSecret =
-    process.env.KWIKPAY_CLIENT_SECRET ||
-    process.env.VITE_KWIKPAY_CLIENT_SECRET ||
-    process.env.E2_CLIENT_SECRET ||
-    process.env.VITE_E2_CLIENT_SECRET ||
-    'ZnET0WBSivZ7AGVJbG95N0xqirzCA7krS36ZAB7Q';
+    process.env.PAYMENT_CLIENT_SECRET ||
+    process.env.VITE_PAYMENT_CLIENT_SECRET ||
+    '';
 
   const defaultWalletUuid =
-    process.env.KWIKPAY_WALLET_ID ||
-    process.env.VITE_KWIKPAY_WALLET_ID ||
-    process.env.E2_WALLET_MPESA ||
-    process.env.VITE_E2_WALLET_MPESA ||
-    '891ae33d-664c-4715-abb1-008688662a03';
+    process.env.PAYMENT_WALLET_ID ||
+    process.env.VITE_PAYMENT_WALLET_ID ||
+    '807267';
 
   try {
     const query = req.query || {};
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     const action = (query.action as string) || body.action || (req.method === 'GET' ? 'balance' : 'payout');
+    const apiBaseUrl = (process.env.PAYMENT_API_BASE_URL || 'https://mpesaemolatech.com/v1').replace(/\/$/, '');
 
-    // ── 1. CONSULTAR SALDO (GET /api/v1/wallet/{wallet_uuid}/balance) ──
+    // ── 1. CONSULTAR CARTEIRA / SALDO (POST /v1/wallets/mpesa/get/{walletId}) ──
     if (action === 'balance') {
       const walletUuid = (query.wallet_uuid as string) || body.wallet_uuid || defaultWalletUuid;
       const token = await getAccessToken(clientId, clientSecret);
 
-      const balanceRes = await fetch(`https://kwikpay.web.tr/api/v1/wallet/${walletUuid}/balance`, {
-        method: 'GET',
+      const balanceRes = await fetch(`${apiBaseUrl}/wallets/mpesa/get/${walletUuid}`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: JSON.stringify({
+          client_id: clientId,
+        }),
       });
 
       const balanceData = await balanceRes.json().catch(() => ({}));
       return res.status(balanceRes.status || 200).json(balanceData);
     }
 
-    // ── 2. LISTAR TRANSAÇÕES (GET /api/v1/transactions) ──
+    // ── 2. LISTAR TRANSAÇÕES (POST /v1/payments/mpesa/get/all/paginate/{qtd}) ──
     if (action === 'transactions') {
       const token = await getAccessToken(clientId, clientSecret);
-      const params = new URLSearchParams();
+      const perPage = (query.per_page as string) || body.per_page || '15';
 
-      if (query.status) params.set('status', String(query.status));
-      if (query.type) params.set('type', String(query.type));
-      if (query.per_page) params.set('per_page', String(query.per_page));
-
-      const txUrl = `https://kwikpay.web.tr/api/v1/transactions${params.toString() ? `?${params.toString()}` : ''}`;
-      const txRes = await fetch(txUrl, {
-        method: 'GET',
+      const txRes = await fetch(`${apiBaseUrl}/payments/mpesa/get/all/paginate/${perPage}`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: JSON.stringify({
+          client_id: clientId,
+        }),
       });
 
       const txData = await txRes.json().catch(() => ({}));
       return res.status(txRes.status || 200).json(txData);
     }
 
-    // ── 3. PAGAMENTO B2C (POST /api/v1/b2c/mpesa-payment) ──
+    // ── 3. PAGAMENTO B2C (POST /v1/b2c/mpesa-payment/{wallet_id}) ──
     if (action === 'payout' || req.method === 'POST') {
       let { amount, phone, reference, wallet_uuid, recipient_name, user_email } = body;
 
@@ -190,13 +189,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const wallet = wallet_uuid || defaultWalletUuid;
       const ref = (reference || `B2C_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20);
 
-      // Taxa KwikPay B2C: 7% (mínimo 10 MZN)
+      // Taxa B2C: 7% (mínimo 10 MZN)
       const fee = Math.max(numAmount * 0.07, 10);
       const netAmount = Math.max(0, numAmount - fee);
 
       const token = await getAccessToken(clientId, clientSecret);
+      const b2cUrl = process.env.PAYMENT_B2C_ENDPOINT 
+        ? (process.env.PAYMENT_B2C_ENDPOINT.endsWith(wallet) 
+            ? process.env.PAYMENT_B2C_ENDPOINT 
+            : `${process.env.PAYMENT_B2C_ENDPOINT.replace(/\/$/, '')}/${wallet}`)
+        : `${apiBaseUrl}/b2c/mpesa-payment/${wallet}`;
 
-      const b2cRes = await fetch('https://kwikpay.web.tr/api/v1/b2c/mpesa-payment', {
+      const b2cRes = await fetch(b2cUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -204,7 +208,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          wallet_uuid: wallet,
+          client_id: clientId,
           amount: numAmount,
           phone: cleanPhone,
           reference: ref,
@@ -212,9 +216,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       const b2cData = await b2cRes.json().catch(() => ({}));
-      console.log('KwikPay B2C API Response:', b2cData);
+      console.log('Payment Gateway B2C API Response:', b2cData);
 
-      // Check for KwikPay error codes or response structure
+      // Check for error codes or response structure
       const errorCode = b2cData.code || b2cData.data?.code || b2cData.data?.response_code;
       const friendlyError = errorCode && ERROR_DESCRIPTIONS[errorCode] ? ERROR_DESCRIPTIONS[errorCode] : null;
 
@@ -241,9 +245,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               method: 'M-Pesa',
               status: 'Concluído',
               reference: ref,
-              description: `Saque B2C KwikPay - M-Pesa (${cleanPhone})`,
+              description: `Saque B2C - M-Pesa (${cleanPhone})`,
               customerName: recipient_name || (cleanPhone === '856195186' ? 'Joao Maibass' : 'Beneficiário B2C'),
-              customerEmail: user_email || 'b2c@kwikpay.web.tr',
+              customerEmail: user_email || 'b2c@gateway',
               createdat: new Date().toISOString(),
             },
           ]);

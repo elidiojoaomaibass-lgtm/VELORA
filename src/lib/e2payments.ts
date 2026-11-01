@@ -30,12 +30,12 @@ export class E2Payments {
     private baseUrl: string;
 
     constructor(clientId?: string, clientSecret?: string) {
-        // Credentials come from env vars or KwikPay defaults
-        this.clientId     = clientId     || import.meta.env.VITE_KWIKPAY_CLIENT_ID     || import.meta.env.VITE_E2_CLIENT_ID     || '';
-        this.clientSecret = clientSecret || import.meta.env.VITE_KWIKPAY_CLIENT_SECRET || import.meta.env.VITE_E2_CLIENT_SECRET || '';
+        // Credentials come from env vars
+        this.clientId     = clientId     || import.meta.env.VITE_PAYMENT_CLIENT_ID || '';
+        this.clientSecret = clientSecret || import.meta.env.VITE_PAYMENT_CLIENT_SECRET || '';
 
-        // In browser, use the same-origin proxy (/api/kwikpay-proxy) to bypass CORS blocks
-        this.baseUrl = typeof window !== 'undefined' ? '/api/kwikpay-proxy' : 'https://kwikpay.web.tr';
+        // In browser, use the same-origin proxy (/api/payment-proxy) to bypass CORS blocks
+        this.baseUrl = typeof window !== 'undefined' ? '/api/payment-proxy' : (import.meta.env.VITE_PAYMENT_BASE_URL || '');
     }
 
     async authenticate(): Promise<string> {
@@ -70,8 +70,8 @@ export class E2Payments {
     }
 
     async c2bPayment(method: 'mpesa' | 'emola', walletId: string, amount: number, phone: string, reference: string) {
-        // Reference must not exceed 20 characters in KwikPay
-        const cleanRef = String(reference || `ORD${Date.now()}`).slice(0, 20);
+        // Reference must not exceed 20 characters and have no spaces
+        const cleanRef = String(reference || `ORD${Date.now()}`).replace(/\s+/g, '_').slice(0, 20);
 
         // Sanitize phone to 9 digits (e.g. 856195186)
         let cleanPhone = String(phone).replace(/\D/g, '');
@@ -87,16 +87,18 @@ export class E2Payments {
         
         let response;
         if (isLocalhost) {
-            console.log('Using Vite /api/kwikpay-proxy for local development...');
+            console.log('Using /api/payment-proxy for local development...');
             // First ensure we have a token
             const token = await this.authenticate();
-            response = await fetch(`/api/kwikpay-proxy/api/v1/c2b/${method}-payment/${walletId}`, {
+            response = await fetch(`/api/payment-proxy/v1/c2b/${method}-payment/${walletId}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
+                    client_id: this.clientId,
                     amount: Number(amount),
                     phone: cleanPhone,
                     reference: cleanRef

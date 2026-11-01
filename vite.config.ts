@@ -20,10 +20,16 @@ export default defineConfig({
           rewrite: (path) => path.replace(/^\/api\/lowtrack-proxy/, '/sales')
         },
         '/api/kwikpay-proxy': {
-          target: 'https://kwikpay.web.tr',
+          target: 'https://mpesaemolatech.com',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api\/kwikpay-proxy/, '')
+        },
+        '/api/payment-proxy': {
+          target: 'https://mpesaemolatech.com',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/payment-proxy/, '')
         }
       }
     },

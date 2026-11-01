@@ -39,26 +39,26 @@ interface KwikPayTx {
 export const SaqueView = () => {
     const { transactions, addTransaction } = useTransactionsStore();
 
-    // ── Abas de Navegação ──────────────────────────────────────────────────────────
+    // â”€â”€ Abas de NavegaÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [activeTab, setActiveTab] = useState<'b2c' | 'loja' | 'extrato_kwikpay'>('b2c');
 
-    // ── Estado do Saque B2C KwikPay ────────────────────────────────────────────────
+    // â”€â”€ Estado do Saque B2C KwikPay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [b2cAmount, setB2cAmount] = useState('');
     const [b2cPhone, setB2cPhone] = useState(''); // Carregado do Supabase
     const [b2cRef, setB2cRef] = useState(`B2C_${Date.now().toString().slice(-6)}`);
     const [b2cLoading, setB2cLoading] = useState(false);
     const [b2cSuccessData, setB2cSuccessData] = useState<any>(null);
 
-    // ── Saldo KwikPay em Tempo Real ────────────────────────────────────────────────
+    // â”€â”€ Saldo KwikPay em Tempo Real â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [walletBalance, setWalletBalance] = useState<KwikPayBalance | null>(null);
     const [balanceLoading, setBalanceLoading] = useState(false);
 
-    // ── Extrato B2C KwikPay Gateway ────────────────────────────────────────────────
+    // â”€â”€ Extrato B2C KwikPay Gateway â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [kwikpayTxs, setKwikpayTxs] = useState<KwikPayTx[]>([]);
     const [txsLoading, setTxsLoading] = useState(false);
     const [txFilter, setTxFilter] = useState<'all' | 'success' | 'failed' | 'pending'>('all');
 
-    // ── Estado do Saque da Loja (Legado / Saldo Acumulado) ─────────────────────────
+    // â”€â”€ Estado do Saque da Loja (Legado / Saldo Acumulado) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [shopAmount, setShopAmount] = useState('');
     const [shopPhone, setShopPhone] = useState('');
     const [shopMethod, setShopMethod] = useState<'M-Pesa' | 'e-Mola'>('M-Pesa');
@@ -68,15 +68,15 @@ export const SaqueView = () => {
 
     const withdrawalHistory = transactions.filter(t => t.type === 'withdrawal');
 
-    // ── Cálculos de Saldos da Loja ─────────────────────────────────────────────────
+    // â”€â”€ CÃ¡lculos de Saldos da Loja â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const balances = useMemo(() => {
         const calcWallet = (wallet: 'M-Pesa' | 'e-Mola') => {
             const collected = transactions
-                .filter(t => t.type === 'payment' && t.status === 'Concluído' && t.method === wallet)
+                .filter(t => t.type === 'payment' && t.status === 'ConcluÃ­do' && t.method === wallet)
                 .reduce((sum, t) => sum + t.amount, 0);
 
             const withdrawn = transactions
-                .filter(t => t.type === 'withdrawal' && t.status === 'Concluído' && t.method === wallet)
+                .filter(t => t.type === 'withdrawal' && t.status === 'ConcluÃ­do' && t.method === wallet)
                 .reduce((sum, t) => sum + t.amount, 0);
 
             const pending = transactions
@@ -105,7 +105,7 @@ export const SaqueView = () => {
         });
     }, [transactions]);
 
-    // ── Carregar número de telemóvel do utilizador do Supabase ─────────────────────
+    // â”€â”€ Carregar nÃºmero de telemÃ³vel do utilizador do Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     useEffect(() => {
         const loadUserPhone = async () => {
             try {
@@ -113,7 +113,7 @@ export const SaqueView = () => {
                 const user = sessionData?.session?.user;
                 if (!user) return;
 
-                // Prioridade 1: user_settings (número B2C guardado explicitamente)
+                // Prioridade 1: user_settings (nÃºmero B2C guardado explicitamente)
                 const { data: settings } = await supabase
                     .from('user_settings')
                     .select('phone_number')
@@ -139,13 +139,13 @@ export const SaqueView = () => {
                     }
                 }
             } catch (e) {
-                console.warn('Erro ao carregar número do utilizador:', e);
+                console.warn('Erro ao carregar nÃºmero do utilizador:', e);
             }
         };
         loadUserPhone();
     }, []);
 
-    // ── Função: Buscar Saldo KwikPay ───────────────────────────────────────────────
+    // â”€â”€ FunÃ§Ã£o: Buscar Saldo KwikPay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const fetchKwikPayBalance = async () => {
         setBalanceLoading(true);
         try {
@@ -163,7 +163,7 @@ export const SaqueView = () => {
         }
     };
 
-    // ── Função: Buscar Transações KwikPay ──────────────────────────────────────────
+    // â”€â”€ FunÃ§Ã£o: Buscar TransaÃ§Ãµes KwikPay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const fetchKwikPayTransactions = async () => {
         setTxsLoading(true);
         try {
@@ -176,7 +176,7 @@ export const SaqueView = () => {
                 setKwikpayTxs(data);
             }
         } catch (e) {
-            console.warn('Erro ao consultar transações KwikPay:', e);
+            console.warn('Erro ao consultar transaÃ§Ãµes KwikPay:', e);
         } finally {
             setTxsLoading(false);
         }
@@ -192,7 +192,7 @@ export const SaqueView = () => {
         }
     }, [activeTab, txFilter]);
 
-    // ── Cálculo em tempo real da taxa B2C (7%, mínimo 10 MZN) ──────────────────────
+    // â”€â”€ CÃ¡lculo em tempo real da taxa B2C (7%, mÃ­nimo 10 MZN) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const b2cFeeCalc = useMemo(() => {
         const val = parseFloat(b2cAmount) || 0;
         if (val <= 0) return { fee: 0, net: 0, isValid: false };
@@ -201,19 +201,19 @@ export const SaqueView = () => {
         return { fee, net, isValid: val >= 1 };
     }, [b2cAmount]);
 
-    // ── Executar Saque B2C Imediato ────────────────────────────────────────────────
+    // â”€â”€ Executar Saque B2C Imediato â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleB2CWithdrawal = async (e: React.FormEvent) => {
         e.preventDefault();
         const num = parseFloat(b2cAmount);
 
         if (!b2cAmount || isNaN(num) || num < 1) {
-            toast.error("O valor mínimo para saque B2C é de 1 MZN.");
+            toast.error("O valor mÃ­nimo para saque B2C Ã© de 1 MZN.");
             return;
         }
 
         const cleanPhone = b2cPhone.replace(/\D/g, '').slice(-9);
         if (cleanPhone.length !== 9) {
-            toast.error("Informe um número M-Pesa válido com 9 dígitos (ex: 856195186 ou 842848202).");
+            toast.error("Informe um nÃºmero M-Pesa vÃ¡lido com 9 dÃ­gitos (ex: 856195186 ou 842848202).");
             return;
         }
 
@@ -227,7 +227,7 @@ export const SaqueView = () => {
                     amount: num,
                     phone: cleanPhone,
                     reference: b2cRef || `B2C_${Date.now().toString().slice(-6)}`,
-                    recipient_name: cleanPhone === '856195186' ? 'João Maibass' : 'Destinatário M-Pesa',
+                    recipient_name: cleanPhone === '856195186' ? 'JoÃ£o Maibass' : 'DestinatÃ¡rio M-Pesa',
                 }),
             });
 
@@ -257,13 +257,13 @@ export const SaqueView = () => {
                 amount: num,
                 phone: cleanPhone,
                 method: 'M-Pesa',
-                status: 'Concluído',
+                status: 'ConcluÃ­do',
                 reference: b2cRef,
-                customerName: cleanPhone === '856195186' ? 'João Maibass' : 'Destinatário M-Pesa',
+                customerName: cleanPhone === '856195186' ? 'JoÃ£o Maibass' : 'DestinatÃ¡rio M-Pesa',
                 description: `Saque B2C KwikPay (${cleanPhone})`,
             });
 
-            // Resetar formulário
+            // Resetar formulÃ¡rio
             setB2cAmount('');
             setB2cRef(`B2C_${Date.now().toString().slice(-6)}`);
             fetchKwikPayBalance();
@@ -274,19 +274,19 @@ export const SaqueView = () => {
         }
     };
 
-    // ── Executar Saque Local da Loja ───────────────────────────────────────────────
+    // â”€â”€ Executar Saque Local da Loja â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const handleShopWithdraw = async (e: React.FormEvent) => {
         e.preventDefault();
         const numAmount = parseFloat(shopAmount);
 
         if (!shopAmount || numAmount <= 0) {
-            toast.error("Insira um valor válido para o levantamento.");
+            toast.error("Insira um valor vÃ¡lido para o levantamento.");
             return;
         }
 
         const cleanPhone = shopPhone.replace(/\D/g, '').slice(-9);
         if (!cleanPhone || cleanPhone.length < 9) {
-            toast.error("Por favor, confirme o número de telefone de destino.");
+            toast.error("Por favor, confirme o nÃºmero de telefone de destino.");
             return;
         }
 
@@ -296,12 +296,12 @@ export const SaqueView = () => {
         }
 
         if (numAmount < 50) {
-            toast.error("O valor mínimo para levantamento interno é de 50 MZN.");
+            toast.error("O valor mÃ­nimo para levantamento interno Ã© de 50 MZN.");
             return;
         }
 
         if (pendingByWallet[shopMethod]) {
-            toast.error(`Já existe um levantamento pendente para ${shopMethod}.`);
+            toast.error(`JÃ¡ existe um levantamento pendente para ${shopMethod}.`);
             return;
         }
 
@@ -318,7 +318,7 @@ export const SaqueView = () => {
                 method: shopMethod,
                 status: 'Pendente',
                 reference: reference,
-                customerName: cleanPhone === '856195186' ? 'João Maibass' : 'Merchant',
+                customerName: cleanPhone === '856195186' ? 'JoÃ£o Maibass' : 'Merchant',
             });
 
             setShowShopSuccess(true);
@@ -337,11 +337,11 @@ export const SaqueView = () => {
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 xl:gap-16">
                 <div className="space-y-1 md:space-y-3 mt-3 md:mt-2">
                     <div className="flex items-center gap-3 mb-1 pl-[3.5rem] md:pl-0">
-                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
+                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-2xl bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white shadow-lg shadow-black/20">
                             <ArrowUpRight size={20} />
                         </div>
-                        <span className="text-[9px] md:text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-[0.2em]">
-                            Área de Saques B2C · KwikPay Gateway
+                        <span className="text-[9px] md:text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-[0.2em]">
+                            Ãrea de Saques B2C Â· KwikPay Gateway
                         </span>
                     </div>
                     <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none pl-[3.5rem] md:pl-0 flex items-center gap-3">
@@ -349,19 +349,19 @@ export const SaqueView = () => {
                         <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(34,197,94,0.4)] animate-pulse" />
                     </h2>
                     <p className="text-[10px] md:text-xs text-slate-400 dark:text-brand-400 font-medium tracking-tight pl-[3.5rem] md:pl-0 leading-snug flex items-center gap-2">
-                        <BadgeDollarSign size={16} className="text-violet-500" />
-                        Envie transferências imediatas para clientes via M-Pesa. Taxa oficial de 7% (mínimo 10 MZN).
+                        <BadgeDollarSign size={16} className="text-slate-500" />
+                        Envie transferÃªncias imediatas para clientes via M-Pesa. Taxa oficial de 7% (mÃ­nimo 10 MZN).
                     </p>
                 </div>
 
-                {/* Sub-Tabs de Navegação */}
+                {/* Sub-Tabs de NavegaÃ§Ã£o */}
                 <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-brand-950 border border-slate-200 dark:border-brand-800 w-fit">
                     <button
                         onClick={() => setActiveTab('b2c')}
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2",
                             activeTab === 'b2c'
-                                ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25 scale-[1.02]"
+                                ? "bg-slate-800 text-white shadow-lg shadow-black/25 scale-[1.02]"
                                 : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                         )}
                     >
@@ -373,7 +373,7 @@ export const SaqueView = () => {
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2",
                             activeTab === 'extrato_kwikpay'
-                                ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25 scale-[1.02]"
+                                ? "bg-slate-800 text-white shadow-lg shadow-black/25 scale-[1.02]"
                                 : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                         )}
                     >
@@ -385,7 +385,7 @@ export const SaqueView = () => {
                         className={cn(
                             "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2",
                             activeTab === 'loja'
-                                ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25 scale-[1.02]"
+                                ? "bg-slate-800 text-white shadow-lg shadow-black/25 scale-[1.02]"
                                 : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                         )}
                     >
@@ -402,13 +402,13 @@ export const SaqueView = () => {
                 className="grid grid-cols-1 md:grid-cols-3 gap-4"
             >
                 {/* Saldo Carteira KwikPay */}
-                <div className="md:col-span-2 relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-slate-900 via-brand-950 to-violet-950 text-white border border-white/10 shadow-xl">
-                    <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="md:col-span-2 relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#0c1220] via-[#131c30] to-[#1a2d50] text-white border border-white/10 shadow-xl">
+                    <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-slate-800/20 rounded-full blur-3xl pointer-events-none" />
                     <div className="relative z-10 flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <div className="flex items-center gap-2 text-violet-300 text-xs font-black uppercase tracking-widest mb-1">
+                            <div className="flex items-center gap-2 text-slate-300 text-xs font-black uppercase tracking-widest mb-1">
                                 <Wallet size={16} />
-                                <span>Saldo KwikPay Gateway (Produção)</span>
+                                <span>Saldo KwikPay Gateway (ProduÃ§Ã£o)</span>
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] border border-emerald-500/30">
                                     Conectado
                                 </span>
@@ -419,12 +419,12 @@ export const SaqueView = () => {
                                         ? Number(walletBalance.balance).toLocaleString('pt-PT', { minimumFractionDigits: 2 })
                                         : '1.250,50'}
                                 </span>
-                                <span className="text-lg font-bold text-violet-300">
+                                <span className="text-lg font-bold text-slate-300">
                                     {walletBalance?.currency || 'MZN'}
                                 </span>
                             </div>
                             <p className="text-[11px] text-slate-300 font-mono mt-2 truncate max-w-md">
-                                Carteira: <span className="text-white font-bold">{walletBalance?.wallet_name || 'Minha Carteira'}</span> · {walletBalance?.wallet_uuid || '891ae33d-664c-4715-abb1-008688662a03'}
+                                Carteira: <span className="text-white font-bold">{walletBalance?.wallet_name || 'Minha Carteira'}</span> Â· {walletBalance?.wallet_uuid || '891ae33d-664c-4715-abb1-008688662a03'}
                             </p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 shrink-0">
@@ -437,37 +437,37 @@ export const SaqueView = () => {
                                 Atualizar Saldo
                             </button>
                             <button
-                                onClick={() => window.dispatchEvent(new CustomEvent('change-view', { detail: 'Documentação' }))}
-                                className="px-3 py-2 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-violet-600/30"
+                                onClick={() => window.dispatchEvent(new CustomEvent('change-view', { detail: 'DocumentaÃ§Ã£o' }))}
+                                className="px-3 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-black/30"
                             >
                                 <FileText size={13} />
-                                Ver Documentação
+                                Ver DocumentaÃ§Ã£o
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Beneficiário Activo (dinâmico do BD) */}
-                <div className="rounded-3xl p-6 bg-white dark:bg-brand-900 border border-violet-100 dark:border-brand-800 shadow-sm flex flex-col justify-between">
+                {/* BeneficiÃ¡rio Activo (dinÃ¢mico do BD) */}
+                <div className="rounded-3xl p-6 bg-white dark:bg-brand-900 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                Destinatário Principal
+                                DestinatÃ¡rio Principal
                             </span>
                             <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                                 M-Pesa Direto
                             </span>
                         </div>
                         <p className="text-base font-black text-slate-900 dark:text-white">
-                            {b2cPhone ? 'Meu Número' : <span className="text-slate-400 text-sm font-medium italic">A carregar...</span>}
+                            {b2cPhone ? 'Meu NÃºmero' : <span className="text-slate-400 text-sm font-medium italic">A carregar...</span>}
                         </p>
-                        <p className="text-lg font-mono font-bold text-violet-600 dark:text-violet-400 mt-0.5">
-                            {b2cPhone || '—'}
+                        <p className="text-lg font-mono font-bold text-slate-600 dark:text-slate-400 mt-0.5">
+                            {b2cPhone || 'â€”'}
                         </p>
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-brand-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-brand-300">
                         <span>Taxa B2C KwikPay</span>
-                        <span className="font-black text-slate-900 dark:text-white">7% (mín. 10 MT)</span>
+                        <span className="font-black text-slate-900 dark:text-white">7% (mÃ­n. 10 MT)</span>
                     </div>
                 </div>
             </motion.div>
@@ -475,12 +475,12 @@ export const SaqueView = () => {
             {/* ABA 1: SAQUE B2C IMEDIATO */}
             {activeTab === 'b2c' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Formulário de Saque B2C */}
+                    {/* FormulÃ¡rio de Saque B2C */}
                     <div className="lg:col-span-1">
                         <motion.div
                             initial={{ opacity: 0, x: -15 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="bg-white dark:bg-brand-900 border border-violet-100 dark:border-brand-800 p-6 rounded-3xl shadow-sm space-y-6"
+                            className="bg-white dark:bg-brand-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm space-y-6"
                         >
                             <div className="border-b border-slate-100 dark:border-brand-800 pb-3 flex items-center justify-between">
                                 <div>
@@ -488,23 +488,23 @@ export const SaqueView = () => {
                                         Enviar Saque B2C
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">
-                                        Transferência direta via API KwikPay M-Pesa.
+                                        TransferÃªncia direta via API KwikPay M-Pesa.
                                     </p>
                                 </div>
-                                <span className="px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-[10px] font-black uppercase">
+                                <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 text-[10px] font-black uppercase">
                                     M-Pesa B2C
                                 </span>
                             </div>
 
                             <form onSubmit={handleB2CWithdrawal} className="space-y-5">
-                                {/* Destinatário */}
+                                {/* DestinatÃ¡rio */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                            Número M-Pesa (9 Dígitos)
+                                            NÃºmero M-Pesa (9 DÃ­gitos)
                                         </label>
-                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400" title="Número carregado automaticamente do perfil">
-                                            {b2cPhone ? `Meu Número (${b2cPhone})` : 'Sem número guardado'}
+                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400" title="NÃºmero carregado automaticamente do perfil">
+                                            {b2cPhone ? `Meu NÃºmero (${b2cPhone})` : 'Sem nÃºmero guardado'}
                                         </span>
                                     </div>
                                     <div className="relative group">
@@ -514,7 +514,7 @@ export const SaqueView = () => {
                                             value={b2cPhone}
                                             onChange={(e) => setB2cPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
                                             placeholder="856195186"
-                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-brand-950 border border-violet-100 dark:border-brand-800 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-violet-500/10 transition-all dark:text-white"
+                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-black outline-none focus:ring-4 focus:ring-slate-500/10 transition-all dark:text-white"
                                         />
                                     </div>
                                 </div>
@@ -532,20 +532,20 @@ export const SaqueView = () => {
                                             value={b2cAmount}
                                             onChange={(e) => setB2cAmount(e.target.value)}
                                             placeholder="100,00"
-                                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-brand-950 border border-violet-100 dark:border-brand-800 rounded-2xl text-2xl font-black outline-none focus:ring-4 focus:ring-violet-500/10 transition-all dark:text-white"
+                                            className="w-full px-5 py-3.5 bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-2xl font-black outline-none focus:ring-4 focus:ring-slate-500/10 transition-all dark:text-white"
                                         />
                                         <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                             MZN
                                         </span>
                                     </div>
-                                    {/* Botões de atalho rápido */}
+                                    {/* BotÃµes de atalho rÃ¡pido */}
                                     <div className="flex gap-1.5 flex-wrap pt-1">
                                         {[50, 100, 250, 500, 1000].map((val) => (
                                             <button
                                                 key={val}
                                                 type="button"
                                                 onClick={() => setB2cAmount(String(val))}
-                                                className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-slate-100 dark:bg-brand-950 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/40 text-slate-600 dark:text-brand-300 transition-all"
+                                                className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-slate-100 dark:bg-brand-950 hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-slate-800/40 text-slate-600 dark:text-brand-300 transition-all"
                                             >
                                                 +{val} MT
                                             </button>
@@ -553,10 +553,10 @@ export const SaqueView = () => {
                                     </div>
                                 </div>
 
-                                {/* Referência */}
+                                {/* ReferÃªncia */}
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                        Referência (Máx 20 caracteres)
+                                        ReferÃªncia (MÃ¡x 20 caracteres)
                                     </label>
                                     <input
                                         type="text"
@@ -564,31 +564,31 @@ export const SaqueView = () => {
                                         value={b2cRef}
                                         onChange={(e) => setB2cRef(e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20))}
                                         placeholder="PAGAMENTO_123"
-                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-brand-950 border border-violet-100 dark:border-brand-800 rounded-xl text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-violet-500/20 dark:text-white uppercase"
+                                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-slate-500/20 dark:text-white uppercase"
                                     />
                                 </div>
 
                                 {/* Discriminativo de Taxa (7%, min 10 MZN) */}
-                                <div className="p-4 rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/30 space-y-2">
+                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/30 space-y-2">
                                     <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-brand-300 font-bold">
-                                        <span>Taxa B2C (7% · mín. 10 MT):</span>
-                                        <span className="text-violet-700 dark:text-violet-300 font-mono">
+                                        <span>Taxa B2C (7% Â· mÃ­n. 10 MT):</span>
+                                        <span className="text-slate-700 dark:text-slate-300 font-mono">
                                             - {b2cFeeCalc.fee.toFixed(2)} MZN
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-violet-200/50 dark:border-violet-900/40">
-                                        <span>Valor Líquido a Receber:</span>
+                                    <div className="flex justify-between items-center text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200/50 dark:border-slate-700/40">
+                                        <span>Valor LÃ­quido a Receber:</span>
                                         <span className="text-emerald-600 dark:text-emerald-400 text-base">
                                             {b2cFeeCalc.net.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} MZN
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Botão de Envio */}
+                                {/* BotÃ£o de Envio */}
                                 <button
                                     type="submit"
                                     disabled={b2cLoading || !b2cAmount || parseFloat(b2cAmount) < 1}
-                                    className="w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-xl shadow-violet-500/20 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    className="w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-xl shadow-black/20 bg-gradient-to-r from-slate-700 to-slate-900 text-white hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                 >
                                     {b2cLoading ? <Loader2 className="animate-spin" size={18} /> : <ArrowUpRight size={18} />}
                                     {b2cLoading ? "Processando B2C via KwikPay..." : "Enviar Saque B2C Imediato"}
@@ -597,24 +597,24 @@ export const SaqueView = () => {
                         </motion.div>
                     </div>
 
-                    {/* Histórico Recente de Saques Locais & KwikPay */}
+                    {/* HistÃ³rico Recente de Saques Locais & KwikPay */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white dark:bg-brand-900 border border-violet-100 dark:border-brand-800 rounded-3xl shadow-sm overflow-hidden">
-                            <div className="p-4 md:p-6 border-b border-violet-50 dark:border-brand-800 flex items-center justify-between">
+                        <div className="bg-white dark:bg-brand-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+                            <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div>
                                     <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                        <History size={18} className="text-violet-600" />
-                                        Histórico Recente de Saques (InfroPay & B2C)
+                                        <History size={18} className="text-slate-700" />
+                                        HistÃ³rico Recente de Saques (InfroPay & B2C)
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">
-                                        Transações de levantamento e saques automáticos registrados.
+                                        TransaÃ§Ãµes de levantamento e saques automÃ¡ticos registrados.
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setActiveTab('extrato_kwikpay')}
-                                    className="text-[10px] font-black text-violet-600 dark:text-violet-400 hover:underline uppercase tracking-wider"
+                                    className="text-[10px] font-black text-slate-600 dark:text-slate-400 hover:underline uppercase tracking-wider"
                                 >
-                                    Ver Extrato Gateway →
+                                    Ver Extrato Gateway â†’
                                 </button>
                             </div>
 
@@ -622,8 +622,8 @@ export const SaqueView = () => {
                                 <table className="w-full text-left text-xs">
                                     <thead>
                                         <tr className="bg-slate-50/50 dark:bg-brand-950/50 border-b border-slate-100 dark:border-brand-800">
-                                            <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px]">ID / Referência</th>
-                                            <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Destinatário</th>
+                                            <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px]">ID / ReferÃªncia</th>
+                                            <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">DestinatÃ¡rio</th>
                                             <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Valor</th>
                                             <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Status</th>
                                         </tr>
@@ -637,10 +637,10 @@ export const SaqueView = () => {
                                             </tr>
                                         )}
                                         {withdrawalHistory.slice(0, 8).map((w) => (
-                                            <tr key={w.id} className="hover:bg-violet-50/20 dark:hover:bg-brand-800/20 transition-all">
+                                            <tr key={w.id} className="hover:bg-slate-50/20 dark:hover:bg-slate-800/20 transition-all">
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="h-7 w-7 rounded-lg bg-violet-100 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold">
+                                                        <div className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 flex items-center justify-center font-bold">
                                                             <ArrowUpRight size={14} />
                                                         </div>
                                                         <div>
@@ -667,11 +667,11 @@ export const SaqueView = () => {
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded-full text-[9px] font-black uppercase inline-flex items-center gap-1",
-                                                        w.status === 'Concluído'
+                                                        w.status === 'ConcluÃ­do'
                                                             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
                                                             : "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
                                                     )}>
-                                                        {w.status === 'Concluído' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+                                                        {w.status === 'ConcluÃ­do' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                                                         {w.status}
                                                     </span>
                                                 </td>
@@ -682,27 +682,27 @@ export const SaqueView = () => {
                             </div>
                         </div>
 
-                        {/* Códigos de Erro KwikPay Guia Rápido */}
+                        {/* CÃ³digos de Erro KwikPay Guia RÃ¡pido */}
                         <div className="p-5 rounded-3xl bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-brand-800">
                             <div className="flex items-center gap-2 mb-3">
-                                <AlertCircle size={16} className="text-violet-600" />
+                                <AlertCircle size={16} className="text-slate-700" />
                                 <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                                    Códigos de Retorno do Gateway (M-Pesa)
+                                    CÃ³digos de Retorno do Gateway (M-Pesa)
                                 </h4>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
                                 {[
                                     { code: 'INS-0', label: 'Sucesso' },
-                                    { code: 'INS-2', label: 'API Key inválida' },
-                                    { code: 'INS-6', label: 'Transação falhou' },
+                                    { code: 'INS-2', label: 'API Key invÃ¡lida' },
+                                    { code: 'INS-6', label: 'TransaÃ§Ã£o falhou' },
                                     { code: 'INS-10', label: 'Duplicada' },
-                                    { code: 'INS-13', label: 'Shortcode inválido' },
-                                    { code: 'INS-15', label: 'Valor inválido (<1)' },
+                                    { code: 'INS-13', label: 'Shortcode invÃ¡lido' },
+                                    { code: 'INS-15', label: 'Valor invÃ¡lido (<1)' },
                                     { code: 'INS-2006', label: 'Saldo insuficiente' },
-                                    { code: 'INS-2051', label: 'MSISDN inválido' },
+                                    { code: 'INS-2051', label: 'MSISDN invÃ¡lido' },
                                 ].map((item) => (
                                     <div key={item.code} className="bg-white dark:bg-brand-900 p-2 rounded-xl border border-slate-100 dark:border-brand-800">
-                                        <span className="font-mono font-black text-violet-600 dark:text-violet-400">{item.code}</span>
+                                        <span className="font-mono font-black text-slate-600 dark:text-slate-400">{item.code}</span>
                                         <p className="text-slate-500 dark:text-brand-300 font-medium truncate">{item.label}</p>
                                     </div>
                                 ))}
@@ -717,16 +717,16 @@ export const SaqueView = () => {
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white dark:bg-brand-900 border border-violet-100 dark:border-brand-800 rounded-3xl shadow-sm overflow-hidden"
+                    className="bg-white dark:bg-brand-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden"
                 >
-                    <div className="p-4 md:p-6 border-b border-violet-50 dark:border-brand-800 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <div>
                             <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                                <History size={18} className="text-violet-600" />
-                                Extrato de Transações B2C (Servidor KwikPay)
+                                <History size={18} className="text-slate-700" />
+                                Extrato de TransaÃ§Ãµes B2C (Servidor KwikPay)
                             </h3>
                             <p className="text-[10px] text-slate-400 font-medium">
-                                Consulta direta à API oficial: <code className="font-bold">https://kwikpay.web.tr/api/v1/transactions</code>
+                                Consulta direta Ã  API oficial: <code className="font-bold">https://kwikpay.web.tr/api/v1/transactions</code>
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -736,7 +736,7 @@ export const SaqueView = () => {
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-50 dark:bg-brand-950 border border-slate-200 dark:border-brand-800 outline-none text-slate-700 dark:text-slate-300"
                             >
                                 <option value="all">Todos os Status</option>
-                                <option value="success">Concluídos (success)</option>
+                                <option value="success">ConcluÃ­dos (success)</option>
                                 <option value="failed">Falhados (failed)</option>
                                 <option value="pending">Pendentes (pending)</option>
                             </select>
@@ -755,7 +755,7 @@ export const SaqueView = () => {
                             <thead>
                                 <tr className="bg-slate-50/50 dark:bg-brand-950/50 border-b border-slate-100 dark:border-brand-800">
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px]">ID Gateway / Ref</th>
-                                    <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Destinatário</th>
+                                    <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">DestinatÃ¡rio</th>
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Valor</th>
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Taxa (7%)</th>
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Status</th>
@@ -765,7 +765,7 @@ export const SaqueView = () => {
                                 {txsLoading && (
                                     <tr>
                                         <td colSpan={5} className="px-4 py-12 text-center text-slate-400 text-xs">
-                                            <Loader2 size={24} className="animate-spin mx-auto mb-2 text-violet-600" />
+                                            <Loader2 size={24} className="animate-spin mx-auto mb-2 text-slate-700" />
                                             Carregando extrato KwikPay...
                                         </td>
                                     </tr>
@@ -773,12 +773,12 @@ export const SaqueView = () => {
                                 {!txsLoading && kwikpayTxs.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-4 py-12 text-center text-slate-400 text-xs italic">
-                                            Nenhuma transação B2C encontrada com os filtros selecionados.
+                                            Nenhuma transaÃ§Ã£o B2C encontrada com os filtros selecionados.
                                         </td>
                                     </tr>
                                 )}
                                 {!txsLoading && kwikpayTxs.map((tx, idx) => (
-                                    <tr key={tx.id || tx.transaction_id || idx} className="hover:bg-violet-50/20 dark:hover:bg-brand-800/20 transition-all">
+                                    <tr key={tx.id || tx.transaction_id || idx} className="hover:bg-slate-50/20 dark:hover:bg-slate-800/20 transition-all">
                                         <td className="px-4 py-3">
                                             <p className="font-mono font-bold text-slate-900 dark:text-white">
                                                 {tx.reference || tx.transaction_id || `TX_${idx}`}
@@ -799,7 +799,7 @@ export const SaqueView = () => {
                                         <td className="px-4 py-3 text-center">
                                             <span className={cn(
                                                 "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase inline-flex items-center gap-1",
-                                                tx.status === 'success' || tx.status === 'Concluído'
+                                                tx.status === 'success' || tx.status === 'ConcluÃ­do'
                                                     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
                                                     : tx.status === 'failed'
                                                     ? "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"
@@ -819,12 +819,12 @@ export const SaqueView = () => {
             {/* ABA 3: SALDOS DA LOJA & LEVANTAMENTOS TRADICIONAIS */}
             {activeTab === 'loja' && (
                 <div className="space-y-6">
-                    {/* Tabela de Visão Geral de Saldos da Loja */}
+                    {/* Tabela de VisÃ£o Geral de Saldos da Loja */}
                     <div className="bg-white dark:bg-brand-900 border border-slate-100 dark:border-brand-800 rounded-3xl shadow-sm overflow-hidden">
                         <div className="p-4 md:p-6 border-b border-slate-100 dark:border-brand-800 flex items-center justify-between">
                             <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <Wallet size={18} className="text-emerald-600" />
-                                Visão Geral de Saldos Acumulados da Loja
+                                VisÃ£o Geral de Saldos Acumulados da Loja
                             </h3>
                             <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-brand-800 text-[9px] font-black text-emerald-600 uppercase tracking-widest">
                                 M-Pesa & e-Mola
@@ -838,7 +838,7 @@ export const SaqueView = () => {
                                         <th className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Status</th>
                                         <th className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Saldo Coletado</th>
                                         <th className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Levantado</th>
-                                        <th className="px-6 py-3 font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest text-[9px] text-right bg-emerald-50/30">Disponível</th>
+                                        <th className="px-6 py-3 font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest text-[9px] text-right bg-emerald-50/30">DisponÃ­vel</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-brand-800">
@@ -861,7 +861,7 @@ export const SaqueView = () => {
                                                     </span>
                                                 ) : (
                                                     <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase">
-                                                        Disponível
+                                                        DisponÃ­vel
                                                     </span>
                                                 )}
                                             </td>
@@ -881,7 +881,7 @@ export const SaqueView = () => {
                         </div>
                     </div>
 
-                    {/* Formulário de Retirada da Loja */}
+                    {/* FormulÃ¡rio de Retirada da Loja */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 bg-white dark:bg-brand-900 border border-slate-100 dark:border-brand-800 p-6 rounded-3xl shadow-sm">
                             <h3 className="text-base font-black text-slate-900 dark:text-white mb-4">
@@ -967,7 +967,7 @@ export const SaqueView = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-white dark:bg-brand-900 w-full max-w-md rounded-[2.5rem] p-8 text-center shadow-2xl border border-violet-100 dark:border-brand-800 space-y-6"
+                            className="bg-white dark:bg-brand-900 w-full max-w-md rounded-[2.5rem] p-8 text-center shadow-2xl border border-slate-100 dark:border-slate-800 space-y-6"
                         >
                             <div className="h-20 w-20 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 flex items-center justify-center mx-auto shadow-inner ring-4 ring-emerald-50/50">
                                 <CheckCircle2 size={44} className="animate-bounce" />
@@ -975,19 +975,19 @@ export const SaqueView = () => {
 
                             <div className="space-y-1">
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                                    Saque B2C Concluído!
+                                    Saque B2C ConcluÃ­do!
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-brand-300 font-medium">
                                     O valor foi enviado para a conta M-Pesa do cliente.
                                 </p>
                             </div>
 
-                            {/* Resumo da Transação */}
+                            {/* Resumo da TransaÃ§Ã£o */}
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-brand-800 text-left space-y-2 text-xs">
                                 <div className="flex justify-between">
-                                    <span className="text-slate-400">Destinatário:</span>
+                                    <span className="text-slate-400">DestinatÃ¡rio:</span>
                                     <span className="font-mono font-bold text-slate-900 dark:text-white">
-                                        {b2cSuccessData.phone} (João Maibass)
+                                        {b2cSuccessData.phone} (JoÃ£o Maibass)
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -998,18 +998,18 @@ export const SaqueView = () => {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Taxa KwikPay (7%):</span>
-                                    <span className="font-bold text-violet-600 dark:text-violet-400">
+                                    <span className="font-bold text-slate-600 dark:text-slate-400">
                                         - {b2cSuccessData.fee?.toFixed(2)} MZN
                                     </span>
                                 </div>
                                 <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-brand-800 text-sm font-black">
-                                    <span className="text-slate-900 dark:text-white">Valor Líquido:</span>
+                                    <span className="text-slate-900 dark:text-white">Valor LÃ­quido:</span>
                                     <span className="text-emerald-600 dark:text-emerald-400">
                                         {b2cSuccessData.net?.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} MZN
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center pt-1 text-[10px] font-mono text-slate-400">
-                                    <span>Referência:</span>
+                                    <span>ReferÃªncia:</span>
                                     <span className="flex items-center gap-1 font-bold text-slate-600 dark:text-slate-300">
                                         {b2cSuccessData.reference}
                                         <button
@@ -1018,7 +1018,7 @@ export const SaqueView = () => {
                                                 setCopiedRef(true);
                                                 setTimeout(() => setCopiedRef(false), 2000);
                                             }}
-                                            className="text-violet-500 hover:text-violet-700"
+                                            className="text-slate-500 hover:text-slate-700"
                                         >
                                             {copiedRef ? <Check size={12} /> : <Copy size={12} />}
                                         </button>
@@ -1028,7 +1028,7 @@ export const SaqueView = () => {
 
                             <button
                                 onClick={() => setB2cSuccessData(null)}
-                                className="w-full py-4 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-2xl font-black text-sm shadow-xl shadow-violet-600/30 transition-all"
+                                className="w-full py-4 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-2xl font-black text-sm shadow-xl shadow-black/30 transition-all"
                             >
                                 Fechar Comprovante
                             </button>
@@ -1054,7 +1054,7 @@ export const SaqueView = () => {
                                 Levantamento Solicitado
                             </h3>
                             <p className="text-xs text-slate-400 font-medium">
-                                Seu pedido foi registrado com sucesso e será creditado em breve.
+                                Seu pedido foi registrado com sucesso e serÃ¡ creditado em breve.
                             </p>
                             <button
                                 onClick={() => setShowShopSuccess(false)}
@@ -1069,3 +1069,6 @@ export const SaqueView = () => {
         </div>
     );
 };
+
+
+

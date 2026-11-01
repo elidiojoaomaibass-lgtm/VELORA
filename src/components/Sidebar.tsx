@@ -2,7 +2,7 @@ import {
     LayoutDashboard, ShoppingBag, Users,
     Settings,
     Gift, Layers, ShoppingCart, Wallet,
-    Wrench, Moon, Sun, Banknote, Cpu
+    Wrench, Moon, Sun, Banknote
 } from "lucide-react";
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -11,7 +11,7 @@ export type ViewType =
     | "ThankYou"
     | "Dashboard" | "Vendas" | "Produtos" | "Afiliados"
     | "Mercado" | "Pagamentos" | "Levantamentos" | "Premiações" | "Integrações"
-    | "Análise" | "Configurações" | "Documentação" | "B2C Config";
+    | "Análise" | "Configurações" | "Documentação";
 
 interface SidebarProps {
     activeView: ViewType;
@@ -45,7 +45,6 @@ const menuGroups = [
         label: "Finanças",
         items: [
             { icon: Banknote, label: "Levantamentos" as ViewType },
-            { icon: Cpu, label: "B2C Config" as ViewType },
         ],
     },
     {
@@ -72,7 +71,7 @@ export const Sidebar = ({ activeView, setView, isDarkMode, toggleDarkMode, isOpe
             )}
 
             <aside className={cn(
-                "fixed left-0 top-0 z-50 h-screen w-72 lg:w-64 bg-white dark:bg-[#0f0525] border-r border-slate-100 dark:border-white/5 flex flex-col overflow-hidden transition-all duration-500 ease-in-out transform shadow-xl lg:shadow-none",
+                "fixed left-0 top-0 z-50 h-screen w-72 lg:w-64 bg-white dark:bg-[#131c30] border-r border-slate-100 dark:border-[#1e2d45] flex flex-col overflow-hidden transition-all duration-500 ease-in-out transform shadow-xl lg:shadow-none",
                 isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
             )}>
                 <div className="px-5 py-6 border-b border-slate-100 dark:border-white/10 flex flex-col gap-1 items-start">

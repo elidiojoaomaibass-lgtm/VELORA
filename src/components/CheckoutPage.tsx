@@ -20,7 +20,7 @@ import { ScarcityNotification } from './ScarcityNotification';
 
 export const CheckoutPage = () => {
     const { addTransaction, updateTransactionStatus } = useTransactionsStore();
-    const [method, setMethod] = useState<'mpesa' | 'emola'>('mpesa');
+    const [method, setMethod] = useState<'mpesa' | 'emola'>('emola');
     const [status, setStatus] = useState<'idle' | 'processing' | 'success'>('idle');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -201,13 +201,22 @@ export const CheckoutPage = () => {
 
         const sanitizedPaymentPhone = cleanPhone(paymentPhone);
 
+        // Apenas e-Mola disponível: validar prefixo 86 ou 87
+        const prefix = sanitizedPaymentPhone.substring(0, 2);
+        if (prefix !== '86' && prefix !== '87') {
+            setErrorMessage('Este checkout aceita apenas e-Mola. Introduza um número e-Mola (86 ou 87).');
+            setStatus('idle');
+            return;
+        }
+        const detectedMethod: 'mpesa' | 'emola' = 'emola';
+
         let currentTxId = '';
 
         try {
             const e2p = new E2Payments();
             const walletId = method === 'mpesa'
-                ? (import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_MPESA || '')
-                : (import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_EMOLA || '');
+                ? (import.meta.env.VITE_PAYMENT_WALLET_MPESA || import.meta.env.VITE_PAYMENT_WALLET_ID || import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_MPESA || '807267')
+                : (import.meta.env.VITE_PAYMENT_WALLET_EMOLA || import.meta.env.VITE_PAYMENT_WALLET_ID || import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_EMOLA || '257096');
 
             const result = await e2p.c2bPayment(
                 method,
@@ -402,7 +411,7 @@ export const CheckoutPage = () => {
                                         placeholder="Introduza o seu nome completo"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-base font-bold focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                        className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-900 text-base font-bold focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
                                         required
                                     />
                                 </div>
@@ -419,7 +428,7 @@ export const CheckoutPage = () => {
                                                 placeholder="84 xxx xxxx"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
-                                                className="flex-1 h-12 px-4 rounded-r-xl border border-slate-200 bg-white text-base font-bold focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                                className="flex-1 h-12 px-4 rounded-r-xl border border-slate-200 bg-white text-slate-900 text-base font-bold focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
                                                 required
                                             />
                                         </div>
@@ -476,77 +485,51 @@ export const CheckoutPage = () => {
 
 
 
-                        {/* Section 3: Payment Provider */}
+                        {/* Section 3: Payment Provider - apenas e-Mola */}
                         <div className="space-y-4 pt-2">
                             <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                                <h3 className="text-base font-bold text-slate-900  tracking-wider">Método de Pagamento</h3>
+                                <h3 className="text-base font-bold text-slate-900 tracking-wider">Método de Pagamento</h3>
                             </div>
 
                             <div className="space-y-4">
-                                {/* M-Pesa Option */}
-                                <div
-                                    onClick={() => {
-                                        if (method !== 'mpesa') {
-                                            setMethod('mpesa');
-                                            setPaymentPhone('');
-                                        }
-                                    }}
-                                    className={cn(
-                                        "rounded-2xl border-2 p-4 cursor-pointer transition-all relative overflow-hidden space-y-4",
-                                        method === 'mpesa' ? "border-red-500 bg-red-50/5 shadow-md shadow-red-500/5" : "border-slate-100 hover:border-slate-200 bg-white"
-                                    )}
-                                >
+                                {/* e-Mola (único método disponível) */}
+                                <div className="rounded-2xl border-2 border-orange-500 bg-orange-50/5 shadow-md shadow-orange-500/5 p-4 relative overflow-hidden space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 p-1 bg-white rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                                                 <img
-                                                    src="/mpesa_logo.png"
-                                                    alt="M-Pesa"
+                                                    src="/emola_logo.png"
+                                                    alt="e-Mola"
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-black text-slate-950  tracking-wider">M-Pesa</h4>
+                                                <h4 className="text-sm font-black text-slate-950 tracking-wider">e-Mola</h4>
                                             </div>
                                         </div>
-                                        <div className={cn(
-                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                            method === 'mpesa' ? "border-red-500" : "border-slate-300"
-                                        )}>
-                                            {method === 'mpesa' && <div className="h-2.5 w-2.5 rounded-full bg-red-500" />}
+                                        <div className="h-5 w-5 rounded-full border-2 border-orange-500 flex items-center justify-center">
+                                            <div className="h-2.5 w-2.5 rounded-full bg-orange-500" />
                                         </div>
                                     </div>
 
-                                    {/* M-Pesa Wallet Input inside card */}
-                                    <AnimatePresence>
-                                        {method === 'mpesa' && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                className="space-y-2 pt-3 border-t border-red-500/10 cursor-default"
-                                                onClick={(e) => e.stopPropagation()} // Prevent card deselection/toggle click
-                                            >
-                                                <div className="flex overflow-hidden">
-                                                    <div className="h-12 px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-600 gap-1.5 shrink-0">
-                                                        <span className="text-[10px] opacity-60  font-black">MZ</span> +258
-                                                    </div>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="84 xxx xxxx"
-                                                        value={paymentPhone}
-                                                        onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
-                                                        className="flex-1 h-12 px-4 rounded-r-xl border border-slate-200 bg-white text-base font-bold focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
-                                                        required={method === 'mpesa'}
-                                                    />
-                                                </div>
-                                                <span className="text-[10px] text-slate-400 font-medium block">Introduza o seu PIN de segurança no telemóvel quando solicitado.</span>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    {/* e-Mola Wallet Input */}
+                                    <div className="space-y-2 pt-3 border-t border-orange-500/10">
+                                        <div className="flex overflow-hidden">
+                                            <div className="h-12 px-3.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-600 gap-1.5 shrink-0">
+                                                <span className="text-[10px] opacity-60 font-black">MZ</span> +258
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="86 xxx xxxx ou 87 xxx xxxx"
+                                                value={paymentPhone}
+                                                onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 14))}
+                                                className="flex-1 h-12 px-4 rounded-r-xl border border-slate-200 bg-white text-slate-900 text-base font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                                                required
+                                            />
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 font-medium block">Introduza o seu PIN de segurança no telemóvel quando solicitado.</span>
+                                    </div>
                                 </div>
-
-
                             </div>
                         </div>
 
