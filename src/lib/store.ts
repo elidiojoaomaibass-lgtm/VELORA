@@ -567,8 +567,8 @@ export const useTransactionsStore = () => {
                 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
                 
                 if (userEmail && userEmail.toLowerCase() !== ADMIN_EMAIL) {
-                    // PostgreSQL normaliza nomes de colunas para lowercase: customeremail
-                    query = query.or(`customeremail.eq.${userEmail},customeremail.is.null,customeremail.eq.`);
+                    // Filtrar por email do merchant (PostgreSQL normaliza para lowercase)
+                    query = query.or(`customeremail.eq.${userEmail},customeremail.is.null`);
                 }
 
                 const { data, error } = await query;
