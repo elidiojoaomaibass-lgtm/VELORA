@@ -229,18 +229,38 @@ export const CheckoutPage = () => {
             currentTxId = result.transaction_id || 'TX_' + Date.now();
 
             try {
-                await addTransaction({
-                    id: currentTxId,
-                    type: 'payment',
-                    amount: product.price,
-                    phone: sanitizedPaymentPhone,
-                    method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                    status: 'Pendente',
-                    reference: reference,
-                    description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
-                    customerName: name || 'Cliente',
-                    customerEmail: product.user_email || '',
+                // Usar endpoint server-side para contornar RLS do Supabase
+                const regRes = await fetch('/api/register-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: currentTxId,
+                        type: 'payment',
+                        amount: product.price,
+                        phone: sanitizedPaymentPhone,
+                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
+                        status: 'Pendente',
+                        reference: reference,
+                        description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
+                        customerName: name || 'Cliente',
+                        customerEmail: product.user_email || '',
+                    })
                 });
+                if (!regRes.ok) {
+                    // Fallback: tenta addTransaction local se o server falhar
+                    await addTransaction({
+                        id: currentTxId,
+                        type: 'payment',
+                        amount: product.price,
+                        phone: sanitizedPaymentPhone,
+                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
+                        status: 'Pendente',
+                        reference: reference,
+                        description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
+                        customerName: name || 'Cliente',
+                        customerEmail: product.user_email || '',
+                    });
+                }
             } catch (txErr) {
                 console.warn("Falha ao registar transação pendente:", txErr);
             }

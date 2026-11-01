@@ -12,6 +12,8 @@ import fetch from 'node-fetch';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+// Usar service_role para contornar RLS e garantir que todas as vendas são gravadas
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
 const globalLowtrakApiKey = process.env.VITE_LOWTRAK_API_KEY || process.env.LOWTRAK_API_KEY || '';
 const lowtrackEndpoint = process.env.VITE_LOWTRAK_ENDPOINT || process.env.LOWTRAK_ENDPOINT || 'https://lowtrack.com.br/api/webhook';
 const defaultMerchantWebhookUrl = process.env.VITE_MERCHANT_WEBHOOK_URL || '';
@@ -24,9 +26,10 @@ const paymentClientSecret = process.env.VITE_PAYMENT_CLIENT_SECRET || process.en
 const paymentWalletUuid = process.env.VITE_PAYMENT_WALLET_ID || process.env.PAYMENT_WALLET_ID || '';
 
 let supabase: any = null;
-if (supabaseUrl && supabaseAnonKey) {
+if (supabaseUrl && supabaseServiceKey) {
   try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Supabase webhook client: usando', supabaseServiceKey === supabaseAnonKey ? 'anon key (sem service_role)' : 'service_role key');
   } catch (e) {
     console.error('Erro ao inicializar Supabase no webhook:', e);
   }
