@@ -82,12 +82,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isSuccess = (status === 'success' || status === 'payment.success' || String(status).toUpperCase() === 'CONCLUÍDO');
     const finalStatus = isSuccess ? 'Concluído' : 'Falhou';
 
-    console.log(`Atualizando transação ${transaction_id} para status: ${finalStatus}`);
+    console.log(`Upsert transação ${transaction_id} -> status: ${finalStatus}`);
 
+    // Upsert garante que a transação é criada se não existir (caso o browser falhou ao inserir)
     const { data: updatedTx, error } = await supabase
       .from('transactions')
-      .update({ status: finalStatus })
-      .eq('id', transaction_id)
+      .upsert([
+        {
+          id: transaction_id,
+          type: 'payment',
+          amount: amount ? Number(amount) : 0,
+          phone: phone || '',
+          method: method || 'e-Mola',
+          status: finalStatus,
+          reference: reference || transaction_id,
+          customerName: customerName || 'Cliente',
+          description: payload.description || '',
+          createdat: new Date().toISOString(),
+        }
+      ], { onConflict: 'id', ignoreDuplicates: false })
       .select()
       .single();
 

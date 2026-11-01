@@ -567,9 +567,8 @@ export const useTransactionsStore = () => {
                 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
                 
                 if (userEmail && userEmail.toLowerCase() !== ADMIN_EMAIL) {
-                    // Use OR filter: include transactions owned by this merchant (customerEmail)
-                    // OR transactions where customerEmail is null/empty (e.g. failed before email was set)
-                    query = query.or(`customerEmail.eq.${userEmail},customerEmail.is.null,customerEmail.eq.`);
+                    // PostgreSQL normaliza nomes de colunas para lowercase: customeremail
+                    query = query.or(`customeremail.eq.${userEmail},customeremail.is.null,customeremail.eq.`);
                 }
 
                 const { data, error } = await query;
@@ -586,10 +585,22 @@ export const useTransactionsStore = () => {
                     }));
                     updateTransactions(mapped);
                 } else {
-                    // Se estiver vazio no Supabase, tenta carregar as transações locais salvas
-                    const local = getInitialTransactions();
-                    if (local.length > 0) {
-                        updateTransactions(local);
+                    // Fallback sem filtro de email para depurar possivel nome de coluna errado
+                    console.warn('Nenhuma transação com filtro email, tentando sem filtro...');
+                    const { data: allData } = await supabase.from('transactions').select('*').order('createdat', { ascending: false });
+                    if (allData && allData.length > 0) {
+                        const mapped = allData.map((tx: any) => ({
+                            ...tx,
+                            amount: Number(tx.amount),
+                            createdAt: tx.createdAt || tx.created_at || tx.createdat
+                        }));
+                        updateTransactions(mapped);
+                    } else {
+                        // Se estiver vazio no Supabase, tenta carregar as transações locais salvas
+                        const local = getInitialTransactions();
+                        if (local.length > 0) {
+                            updateTransactions(local);
+                        }
                     }
                 }
             } catch (err) {
