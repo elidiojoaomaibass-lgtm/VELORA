@@ -39,7 +39,7 @@ interface KwikPayTx {
 export const SaqueView = () => {
     const { transactions, addTransaction } = useTransactionsStore();
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Abas de NavegaÃƒÂ§ÃƒÂ£o Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Abas de Navegação Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const [activeTab, setActiveTab] = useState<'b2c' | 'loja' | 'extrato_kwikpay'>('b2c');
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Estado do Saque B2C KwikPay Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -68,15 +68,15 @@ export const SaqueView = () => {
 
     const withdrawalHistory = transactions.filter(t => t.type === 'withdrawal');
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ CÃƒÂ¡lculos de Saldos da Loja Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Cálculos de Saldos da Loja Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const balances = useMemo(() => {
         const calcWallet = (wallet: 'M-Pesa' | 'e-Mola') => {
             const collected = transactions
-                .filter(t => t.type === 'payment' && t.status === 'ConcluÃƒÂ­do' && t.method === wallet)
+                .filter(t => t.type === 'payment' && t.status === 'Concluído' && t.method === wallet)
                 .reduce((sum, t) => sum + t.amount, 0);
 
             const withdrawn = transactions
-                .filter(t => t.type === 'withdrawal' && t.status === 'ConcluÃƒÂ­do' && t.method === wallet)
+                .filter(t => t.type === 'withdrawal' && t.status === 'Concluído' && t.method === wallet)
                 .reduce((sum, t) => sum + t.amount, 0);
 
             const pending = transactions
@@ -105,7 +105,7 @@ export const SaqueView = () => {
         });
     }, [transactions]);
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ Carregar nÃƒÂºmero de telemÃƒÂ³vel do utilizador do Supabase Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Carregar número de telemóvel do utilizador do Supabase Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     useEffect(() => {
         const loadUserPhone = async () => {
             try {
@@ -113,7 +113,7 @@ export const SaqueView = () => {
                 const user = sessionData?.session?.user;
                 if (!user) return;
 
-                // Prioridade 1: user_settings (nÃƒÂºmero B2C guardado explicitamente)
+                // Prioridade 1: user_settings (número B2C guardado explicitamente)
                 const { data: settings } = await supabase
                     .from('user_settings')
                     .select('phone_number')
@@ -139,13 +139,13 @@ export const SaqueView = () => {
                     }
                 }
             } catch (e) {
-                console.warn('Erro ao carregar nÃƒÂºmero do utilizador:', e);
+                console.warn('Erro ao carregar número do utilizador:', e);
             }
         };
         loadUserPhone();
     }, []);
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ FunÃƒÂ§ÃƒÂ£o: Buscar Saldo KwikPay Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Função: Buscar Saldo KwikPay Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const fetchKwikPayBalance = async () => {
         setBalanceLoading(true);
         try {
@@ -163,7 +163,7 @@ export const SaqueView = () => {
         }
     };
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ FunÃƒÂ§ÃƒÂ£o: Buscar TransaÃƒÂ§ÃƒÂµes KwikPay Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Função: Buscar Transações KwikPay Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const fetchKwikPayTransactions = async () => {
         setTxsLoading(true);
         try {
@@ -176,7 +176,7 @@ export const SaqueView = () => {
                 setKwikpayTxs(data);
             }
         } catch (e) {
-            console.warn('Erro ao consultar transaÃƒÂ§ÃƒÂµes KwikPay:', e);
+            console.warn('Erro ao consultar transações KwikPay:', e);
         } finally {
             setTxsLoading(false);
         }
@@ -192,7 +192,7 @@ export const SaqueView = () => {
         }
     }, [activeTab, txFilter]);
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ CÃƒÂ¡lculo em tempo real da taxa B2C (7%, mÃƒÂ­nimo 10 MZN) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Cálculo em tempo real da taxa B2C (7%, mínimo 10 MZN) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const b2cFeeCalc = useMemo(() => {
         const val = parseFloat(b2cAmount) || 0;
         if (val <= 0) return { fee: 0, net: 0, isValid: false };
@@ -207,13 +207,13 @@ export const SaqueView = () => {
         const num = parseFloat(b2cAmount);
 
         if (!b2cAmount || isNaN(num) || num < 1) {
-            toast.error("O valor mÃƒÂ­nimo para saque B2C ÃƒÂ© de 1 MZN.");
+            toast.error("O valor mínimo para saque B2C é de 1 MZN.");
             return;
         }
 
         const cleanPhone = b2cPhone.replace(/\D/g, '').slice(-9);
         if (cleanPhone.length !== 9) {
-            toast.error("Informe um nÃƒÂºmero M-Pesa vÃƒÂ¡lido com 9 dÃƒÂ­gitos (ex: 856195186 ou 842848202).");
+            toast.error("Informe um número M-Pesa válido com 9 dígitos (ex: 856195186 ou 842848202).");
             return;
         }
 
@@ -227,7 +227,7 @@ export const SaqueView = () => {
                     amount: num,
                     phone: cleanPhone,
                     reference: b2cRef || `B2C_${Date.now().toString().slice(-6)}`,
-                    recipient_name: cleanPhone === '856195186' ? 'JoÃƒÂ£o Maibass' : 'DestinatÃƒÂ¡rio M-Pesa',
+                    recipient_name: cleanPhone === '856195186' ? 'João Maibass' : 'Destinatário M-Pesa',
                 }),
             });
 
@@ -257,13 +257,13 @@ export const SaqueView = () => {
                 amount: num,
                 phone: cleanPhone,
                 method: 'M-Pesa',
-                status: 'ConcluÃƒÂ­do',
+                status: 'Concluído',
                 reference: b2cRef,
-                customerName: cleanPhone === '856195186' ? 'JoÃƒÂ£o Maibass' : 'DestinatÃƒÂ¡rio M-Pesa',
+                customerName: cleanPhone === '856195186' ? 'João Maibass' : 'Destinatário M-Pesa',
                 description: `Saque B2C KwikPay (${cleanPhone})`,
             });
 
-            // Resetar formulÃƒÂ¡rio
+            // Resetar formulário
             setB2cAmount('');
             setB2cRef(`B2C_${Date.now().toString().slice(-6)}`);
             fetchKwikPayBalance();
@@ -280,13 +280,13 @@ export const SaqueView = () => {
         const numAmount = parseFloat(shopAmount);
 
         if (!shopAmount || numAmount <= 0) {
-            toast.error("Insira um valor vÃƒÂ¡lido para o levantamento.");
+            toast.error("Insira um valor válido para o levantamento.");
             return;
         }
 
         const cleanPhone = shopPhone.replace(/\D/g, '').slice(-9);
         if (!cleanPhone || cleanPhone.length < 9) {
-            toast.error("Por favor, confirme o nÃƒÂºmero de telefone de destino.");
+            toast.error("Por favor, confirme o número de telefone de destino.");
             return;
         }
 
@@ -296,12 +296,12 @@ export const SaqueView = () => {
         }
 
         if (numAmount < 50) {
-            toast.error("O valor mÃƒÂ­nimo para levantamento interno ÃƒÂ© de 50 MZN.");
+            toast.error("O valor mínimo para levantamento interno é de 50 MZN.");
             return;
         }
 
         if (pendingByWallet[shopMethod]) {
-            toast.error(`JÃƒÂ¡ existe um levantamento pendente para ${shopMethod}.`);
+            toast.error(`Já existe um levantamento pendente para ${shopMethod}.`);
             return;
         }
 
@@ -318,7 +318,7 @@ export const SaqueView = () => {
                 method: shopMethod,
                 status: 'Pendente',
                 reference: reference,
-                customerName: cleanPhone === '856195186' ? 'JoÃƒÂ£o Maibass' : 'Merchant',
+                customerName: cleanPhone === '856195186' ? 'João Maibass' : 'Merchant',
             });
 
             setShowShopSuccess(true);
@@ -350,11 +350,11 @@ export const SaqueView = () => {
                     </h2>
                     <p className="text-[10px] md:text-xs text-slate-400 dark:text-brand-400 font-medium tracking-tight pl-[3.5rem] md:pl-0 leading-snug flex items-center gap-2">
                         <BadgeDollarSign size={16} className="text-slate-500" />
-                        Envie transferÃƒÂªncias imediatas para clientes via M-Pesa. Taxa oficial de 7% (mÃƒÂ­nimo 10 MZN).
+                        Envie transferÃƒÂªncias imediatas para clientes via M-Pesa. Taxa oficial de 7% (mínimo 10 MZN).
                     </p>
                 </div>
 
-                {/* Sub-Tabs de NavegaÃƒÂ§ÃƒÂ£o */}
+                {/* Sub-Tabs de Navegação */}
                 <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-brand-950 border border-slate-200 dark:border-brand-800 w-fit">
                     <button
                         onClick={() => setActiveTab('b2c')}
@@ -408,7 +408,7 @@ export const SaqueView = () => {
                         <div>
                             <div className="flex items-center gap-2 text-slate-300 text-xs font-black uppercase tracking-widest mb-1">
                                 <Wallet size={16} />
-                                <span>Saldo KwikPay Gateway (ProduÃƒÂ§ÃƒÂ£o)</span>
+                                <span>Saldo KwikPay Gateway (Produção)</span>
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] border border-emerald-500/30">
                                     Conectado
                                 </span>
@@ -437,29 +437,29 @@ export const SaqueView = () => {
                                 Atualizar Saldo
                             </button>
                             <button
-                                onClick={() => window.dispatchEvent(new CustomEvent('change-view', { detail: 'DocumentaÃƒÂ§ÃƒÂ£o' }))}
+                                onClick={() => window.dispatchEvent(new CustomEvent('change-view', { detail: 'Documentação' }))}
                                 className="px-3 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-black/30"
                             >
                                 <FileText size={13} />
-                                Ver DocumentaÃƒÂ§ÃƒÂ£o
+                                Ver Documentação
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* BeneficiÃƒÂ¡rio Activo (dinÃƒÂ¢mico do BD) */}
+                {/* Beneficiário Activo (dinâmico do BD) */}
                 <div className="rounded-3xl p-6 bg-white dark:bg-brand-900 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                DestinatÃƒÂ¡rio Principal
+                                Destinatário Principal
                             </span>
                             <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                                 M-Pesa Direto
                             </span>
                         </div>
                         <p className="text-base font-black text-slate-900 dark:text-white">
-                            {b2cPhone ? 'Meu NÃƒÂºmero' : <span className="text-slate-400 text-sm font-medium italic">A carregar...</span>}
+                            {b2cPhone ? 'Meu Número' : <span className="text-slate-400 text-sm font-medium italic">A carregar...</span>}
                         </p>
                         <p className="text-lg font-mono font-bold text-slate-600 dark:text-slate-400 mt-0.5">
                             {b2cPhone || 'Ã¢â‚¬â€'}
@@ -467,7 +467,7 @@ export const SaqueView = () => {
                     </div>
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-brand-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-brand-300">
                         <span>Taxa B2C KwikPay</span>
-                        <span className="font-black text-slate-900 dark:text-white">7% (mÃƒÂ­n. 10 MT)</span>
+                        <span className="font-black text-slate-900 dark:text-white">7% (mín. 10 MT)</span>
                     </div>
                 </div>
             </motion.div>
@@ -475,7 +475,7 @@ export const SaqueView = () => {
             {/* ABA 1: SAQUE B2C IMEDIATO */}
             {activeTab === 'b2c' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* FormulÃƒÂ¡rio de Saque B2C */}
+                    {/* Formulário de Saque B2C */}
                     <div className="lg:col-span-1">
                         <motion.div
                             initial={{ opacity: 0, x: -15 }}
@@ -497,14 +497,14 @@ export const SaqueView = () => {
                             </div>
 
                             <form onSubmit={handleB2CWithdrawal} className="space-y-5">
-                                {/* DestinatÃƒÂ¡rio */}
+                                {/* Destinatário */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                            NÃƒÂºmero M-Pesa (9 DÃƒÂ­gitos)
+                                            Número M-Pesa (9 Dígitos)
                                         </label>
-                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400" title="NÃƒÂºmero carregado automaticamente do perfil">
-                                            {b2cPhone ? `Meu NÃƒÂºmero (${b2cPhone})` : 'Sem nÃƒÂºmero guardado'}
+                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400" title="Número carregado automaticamente do perfil">
+                                            {b2cPhone ? `Meu Número (${b2cPhone})` : 'Sem número guardado'}
                                         </span>
                                     </div>
                                     <div className="relative group">
@@ -538,7 +538,7 @@ export const SaqueView = () => {
                                             MZN
                                         </span>
                                     </div>
-                                    {/* BotÃƒÂµes de atalho rÃƒÂ¡pido */}
+                                    {/* Botões de atalho rápido */}
                                     <div className="flex gap-1.5 flex-wrap pt-1">
                                         {[50, 100, 250, 500, 1000].map((val) => (
                                             <button
@@ -556,7 +556,7 @@ export const SaqueView = () => {
                                 {/* ReferÃƒÂªncia */}
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                        ReferÃƒÂªncia (MÃƒÂ¡x 20 caracteres)
+                                        ReferÃƒÂªncia (Máx 20 caracteres)
                                     </label>
                                     <input
                                         type="text"
@@ -571,20 +571,20 @@ export const SaqueView = () => {
                                 {/* Discriminativo de Taxa (7%, min 10 MZN) */}
                                 <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/30 space-y-2">
                                     <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-brand-300 font-bold">
-                                        <span>Taxa B2C (7% Ã‚Â· mÃƒÂ­n. 10 MT):</span>
+                                        <span>Taxa B2C (7% Ã‚Â· mín. 10 MT):</span>
                                         <span className="text-slate-700 dark:text-slate-300 font-mono">
                                             - {b2cFeeCalc.fee.toFixed(2)} MZN
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-200/50 dark:border-slate-700/40">
-                                        <span>Valor LÃƒÂ­quido a Receber:</span>
+                                        <span>Valor Líquido a Receber:</span>
                                         <span className="text-emerald-600 dark:text-emerald-400 text-base">
                                             {b2cFeeCalc.net.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} MZN
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* BotÃƒÂ£o de Envio */}
+                                {/* Botão de Envio */}
                                 <button
                                     type="submit"
                                     disabled={b2cLoading || !b2cAmount || parseFloat(b2cAmount) < 1}
@@ -597,17 +597,17 @@ export const SaqueView = () => {
                         </motion.div>
                     </div>
 
-                    {/* HistÃƒÂ³rico Recente de Saques Locais & KwikPay */}
+                    {/* Histórico Recente de Saques Locais & KwikPay */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white dark:bg-brand-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
                             <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div>
                                     <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                                         <History size={18} className="text-slate-700" />
-                                        HistÃƒÂ³rico Recente de Saques (InfroPay & B2C)
+                                        Histórico Recente de Saques (InfroPay & B2C)
                                     </h3>
                                     <p className="text-[10px] text-slate-400 font-medium">
-                                        TransaÃƒÂ§ÃƒÂµes de levantamento e saques automÃƒÂ¡ticos registrados.
+                                        Transações de levantamento e saques automáticos registrados.
                                     </p>
                                 </div>
                                 <button
@@ -623,7 +623,7 @@ export const SaqueView = () => {
                                     <thead>
                                         <tr className="bg-slate-50/50 dark:bg-brand-950/50 border-b border-slate-100 dark:border-brand-800">
                                             <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px]">ID / ReferÃƒÂªncia</th>
-                                            <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">DestinatÃƒÂ¡rio</th>
+                                            <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Destinatário</th>
                                             <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Valor</th>
                                             <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Status</th>
                                         </tr>
@@ -667,11 +667,11 @@ export const SaqueView = () => {
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded-full text-[9px] font-black uppercase inline-flex items-center gap-1",
-                                                        w.status === 'ConcluÃƒÂ­do'
+                                                        w.status === 'Concluído'
                                                             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
                                                             : "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
                                                     )}>
-                                                        {w.status === 'ConcluÃƒÂ­do' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
+                                                        {w.status === 'Concluído' ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                                                         {w.status}
                                                     </span>
                                                 </td>
@@ -682,24 +682,24 @@ export const SaqueView = () => {
                             </div>
                         </div>
 
-                        {/* CÃƒÂ³digos de Erro KwikPay Guia RÃƒÂ¡pido */}
+                        {/* Códigos de Erro KwikPay Guia Rápido */}
                         <div className="p-5 rounded-3xl bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-brand-800">
                             <div className="flex items-center gap-2 mb-3">
                                 <AlertCircle size={16} className="text-slate-700" />
                                 <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                                    CÃƒÂ³digos de Retorno do Gateway (M-Pesa)
+                                    Códigos de Retorno do Gateway (M-Pesa)
                                 </h4>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
                                 {[
                                     { code: 'INS-0', label: 'Sucesso' },
-                                    { code: 'INS-2', label: 'API Key invÃƒÂ¡lida' },
-                                    { code: 'INS-6', label: 'TransaÃƒÂ§ÃƒÂ£o falhou' },
+                                    { code: 'INS-2', label: 'API Key inválida' },
+                                    { code: 'INS-6', label: 'Transação falhou' },
                                     { code: 'INS-10', label: 'Duplicada' },
-                                    { code: 'INS-13', label: 'Shortcode invÃƒÂ¡lido' },
-                                    { code: 'INS-15', label: 'Valor invÃƒÂ¡lido (<1)' },
+                                    { code: 'INS-13', label: 'Shortcode inválido' },
+                                    { code: 'INS-15', label: 'Valor inválido (<1)' },
                                     { code: 'INS-2006', label: 'Saldo insuficiente' },
-                                    { code: 'INS-2051', label: 'MSISDN invÃƒÂ¡lido' },
+                                    { code: 'INS-2051', label: 'MSISDN inválido' },
                                 ].map((item) => (
                                     <div key={item.code} className="bg-white dark:bg-brand-900 p-2 rounded-xl border border-slate-100 dark:border-brand-800">
                                         <span className="font-mono font-black text-slate-600 dark:text-slate-400">{item.code}</span>
@@ -723,7 +723,7 @@ export const SaqueView = () => {
                         <div>
                             <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <History size={18} className="text-slate-700" />
-                                Extrato de TransaÃƒÂ§ÃƒÂµes B2C (Servidor KwikPay)
+                                Extrato de Transações B2C (Servidor KwikPay)
                             </h3>
                             <p className="text-[10px] text-slate-400 font-medium">
                                 Consulta direta ÃƒÂ  API oficial: <code className="font-bold">https://kwikpay.web.tr/api/v1/transactions</code>
@@ -736,7 +736,7 @@ export const SaqueView = () => {
                                 className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-50 dark:bg-brand-950 border border-slate-200 dark:border-brand-800 outline-none text-slate-700 dark:text-slate-300"
                             >
                                 <option value="all">Todos os Status</option>
-                                <option value="success">ConcluÃƒÂ­dos (success)</option>
+                                <option value="success">Concluídos (success)</option>
                                 <option value="failed">Falhados (failed)</option>
                                 <option value="pending">Pendentes (pending)</option>
                             </select>
@@ -755,7 +755,7 @@ export const SaqueView = () => {
                             <thead>
                                 <tr className="bg-slate-50/50 dark:bg-brand-950/50 border-b border-slate-100 dark:border-brand-800">
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px]">ID Gateway / Ref</th>
-                                    <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">DestinatÃƒÂ¡rio</th>
+                                    <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Destinatário</th>
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Valor</th>
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Taxa (7%)</th>
                                     <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Status</th>
@@ -773,7 +773,7 @@ export const SaqueView = () => {
                                 {!txsLoading && kwikpayTxs.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="px-4 py-12 text-center text-slate-400 text-xs italic">
-                                            Nenhuma transaÃƒÂ§ÃƒÂ£o B2C encontrada com os filtros selecionados.
+                                            Nenhuma transação B2C encontrada com os filtros selecionados.
                                         </td>
                                     </tr>
                                 )}
@@ -799,7 +799,7 @@ export const SaqueView = () => {
                                         <td className="px-4 py-3 text-center">
                                             <span className={cn(
                                                 "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase inline-flex items-center gap-1",
-                                                tx.status === 'success' || tx.status === 'ConcluÃƒÂ­do'
+                                                tx.status === 'success' || tx.status === 'Concluído'
                                                     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
                                                     : tx.status === 'failed'
                                                     ? "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"
@@ -819,12 +819,12 @@ export const SaqueView = () => {
             {/* ABA 3: SALDOS DA LOJA & LEVANTAMENTOS TRADICIONAIS */}
             {activeTab === 'loja' && (
                 <div className="space-y-6">
-                    {/* Tabela de VisÃƒÂ£o Geral de Saldos da Loja */}
+                    {/* Tabela de Visão Geral de Saldos da Loja */}
                     <div className="bg-white dark:bg-brand-900 border border-slate-100 dark:border-brand-800 rounded-3xl shadow-sm overflow-hidden">
                         <div className="p-4 md:p-6 border-b border-slate-100 dark:border-brand-800 flex items-center justify-between">
                             <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                                 <Wallet size={18} className="text-emerald-600" />
-                                VisÃƒÂ£o Geral de Saldos Acumulados da Loja
+                                Visão Geral de Saldos Acumulados da Loja
                             </h3>
                             <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-brand-800 text-[9px] font-black text-emerald-600 uppercase tracking-widest">
                                 M-Pesa & e-Mola
@@ -838,7 +838,7 @@ export const SaqueView = () => {
                                         <th className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-center">Status</th>
                                         <th className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Saldo Coletado</th>
                                         <th className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-[9px] text-right">Levantado</th>
-                                        <th className="px-6 py-3 font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest text-[9px] text-right bg-emerald-50/30">DisponÃƒÂ­vel</th>
+                                        <th className="px-6 py-3 font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest text-[9px] text-right bg-emerald-50/30">Disponível</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-brand-800">
@@ -861,7 +861,7 @@ export const SaqueView = () => {
                                                     </span>
                                                 ) : (
                                                     <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase">
-                                                        DisponÃƒÂ­vel
+                                                        Disponível
                                                     </span>
                                                 )}
                                             </td>
@@ -881,7 +881,7 @@ export const SaqueView = () => {
                         </div>
                     </div>
 
-                    {/* FormulÃƒÂ¡rio de Retirada da Loja */}
+                    {/* Formulário de Retirada da Loja */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 bg-white dark:bg-brand-900 border border-slate-100 dark:border-brand-800 p-6 rounded-3xl shadow-sm">
                             <h3 className="text-base font-black text-slate-900 dark:text-white mb-4">
@@ -975,19 +975,19 @@ export const SaqueView = () => {
 
                             <div className="space-y-1">
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                                    Saque B2C ConcluÃƒÂ­do!
+                                    Saque B2C Concluído!
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-brand-300 font-medium">
                                     O valor foi enviado para a conta M-Pesa do cliente.
                                 </p>
                             </div>
 
-                            {/* Resumo da TransaÃƒÂ§ÃƒÂ£o */}
+                            {/* Resumo da Transação */}
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-brand-950 border border-slate-100 dark:border-brand-800 text-left space-y-2 text-xs">
                                 <div className="flex justify-between">
-                                    <span className="text-slate-400">DestinatÃƒÂ¡rio:</span>
+                                    <span className="text-slate-400">Destinatário:</span>
                                     <span className="font-mono font-bold text-slate-900 dark:text-white">
-                                        {b2cSuccessData.phone} (JoÃƒÂ£o Maibass)
+                                        {b2cSuccessData.phone} (João Maibass)
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1003,7 +1003,7 @@ export const SaqueView = () => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-brand-800 text-sm font-black">
-                                    <span className="text-slate-900 dark:text-white">Valor LÃƒÂ­quido:</span>
+                                    <span className="text-slate-900 dark:text-white">Valor Líquido:</span>
                                     <span className="text-emerald-600 dark:text-emerald-400">
                                         {b2cSuccessData.net?.toLocaleString('pt-PT', { minimumFractionDigits: 2 })} MZN
                                     </span>
@@ -1054,7 +1054,7 @@ export const SaqueView = () => {
                                 Levantamento Solicitado
                             </h3>
                             <p className="text-xs text-slate-400 font-medium">
-                                Seu pedido foi registrado com sucesso e serÃƒÂ¡ creditado em breve.
+                                Seu pedido foi registrado com sucesso e será creditado em breve.
                             </p>
                             <button
                                 onClick={() => setShowShopSuccess(false)}

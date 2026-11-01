@@ -43,14 +43,14 @@ type TabId = 'credenciais' | 'saldo' | 'numero' | 'historico' | 'testar';
 const TABS: { id: TabId; label: string; icon: React.ElementType; color: string }[] = [
     { id: 'credenciais', label: 'Credenciais', icon: Key, color: 'from-slate-600 to-slate-800' },
     { id: 'saldo', label: 'Saldo', icon: Wallet, color: 'from-emerald-500 to-teal-600' },
-    { id: 'numero', label: 'NÃƒÂºmero', icon: Phone, color: 'from-blue-500 to-cyan-600' },
-    { id: 'historico', label: 'HistÃƒÂ³rico', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
+    { id: 'numero', label: 'Número', icon: Phone, color: 'from-blue-500 to-cyan-600' },
+    { id: 'historico', label: 'Histórico', icon: BarChart3, color: 'from-amber-500 to-orange-600' },
     { id: 'testar', label: 'Testar', icon: TestTube2, color: 'from-rose-500 to-pink-600' },
 ];
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: React.ElementType }> = {
     success: { label: 'Sucesso', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
-    completed: { label: 'ConcluÃƒÂ­do', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
+    completed: { label: 'Concluído', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
     failed: { label: 'Falhou', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20', icon: XCircle },
     pending: { label: 'Pendente', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', icon: Clock },
 };
@@ -167,7 +167,7 @@ export const B2CConfigView = () => {
             setBalance(data.success && data.data ? data.data : data);
             setLastRefresh(new Date());
         } catch {
-            toast.error('NÃƒÂ£o foi possÃƒÂ­vel consultar o saldo.');
+            toast.error('Não foi possível consultar o saldo.');
         } finally {
             setBalanceLoading(false);
         }
@@ -182,7 +182,7 @@ export const B2CConfigView = () => {
             const data = await res.json();
             setTxs(data.success && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []);
         } catch {
-            toast.error('Erro ao carregar histÃƒÂ³rico.');
+            toast.error('Erro ao carregar histórico.');
         } finally {
             setTxsLoading(false);
         }
@@ -212,7 +212,7 @@ export const B2CConfigView = () => {
     // Ã¢â€â‚¬Ã¢â€â‚¬ Save Phone Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const handleSavePhone = async () => {
         const clean = phoneNumber.replace(/\D/g, '').slice(-9);
-        if (clean.length !== 9) { toast.error('NÃƒÂºmero M-Pesa invÃƒÂ¡lido (9 dÃƒÂ­gitos).'); return; }
+        if (clean.length !== 9) { toast.error('Número M-Pesa inválido (9 dígitos).'); return; }
         setPhoneSaving(true);
         try {
             const { data: sess } = await supabase.auth.getSession();
@@ -225,9 +225,9 @@ export const B2CConfigView = () => {
             localStorage.setItem(LS_PHONE, clean);
             setPhoneVerified(true);
             setTestPhone(clean);
-            toast.success(`Ã°Å¸â€œÂ± NÃƒÂºmero +258 ${clean} configurado como destino B2C!`);
+            toast.success(`Ã°Å¸â€œÂ± Número +258 ${clean} configurado como destino B2C!`);
         } catch {
-            toast.error('Erro ao guardar nÃƒÂºmero no Supabase.');
+            toast.error('Erro ao guardar número no Supabase.');
         } finally {
             setPhoneSaving(false);
         }
@@ -236,9 +236,9 @@ export const B2CConfigView = () => {
     // Ã¢â€â‚¬Ã¢â€â‚¬ Test Payout Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const handleTestPayout = async () => {
         const amt = parseFloat(testAmount);
-        if (!amt || amt < 1) { toast.error('Valor mÃƒÂ­nimo: 1 MZN'); return; }
+        if (!amt || amt < 1) { toast.error('Valor mínimo: 1 MZN'); return; }
         const cleanPhone = testPhone.replace(/\D/g, '').slice(-9);
-        if (cleanPhone.length !== 9) { toast.error('NÃƒÂºmero invÃƒÂ¡lido (9 dÃƒÂ­gitos).'); return; }
+        if (cleanPhone.length !== 9) { toast.error('Número inválido (9 dígitos).'); return; }
         setTestLoading(true);
         setTestResult(null);
         try {
@@ -253,7 +253,7 @@ export const B2CConfigView = () => {
             ok ? toast.success('Ã¢Å“â€¦ Payout de teste processado!') : toast.error(`Ã¢ÂÅ’ ${data.error || 'Erro no payout'}`);
         } catch (err: any) {
             setTestResult({ ok: false, data: { error: err.message } });
-            toast.error('Falha de conexÃƒÂ£o com a API B2C.');
+            toast.error('Falha de conexão com a API B2C.');
         } finally {
             setTestLoading(false);
             setTestRef(`TEST_${Date.now().toString().slice(-6)}`);
@@ -268,7 +268,7 @@ export const B2CConfigView = () => {
         }
         const amt = parseFloat(saqueAmount);
         if (!amt || amt < 1) {
-            toast.error('Por favor, informe um valor vÃƒÂ¡lido para o saque (mÃƒÂ­nimo 1 MZN).');
+            toast.error('Por favor, informe um valor válido para o saque (mínimo 1 MZN).');
             return;
         }
         if (amt > balance.balance) {
@@ -276,7 +276,7 @@ export const B2CConfigView = () => {
             return;
         }
         if (!phoneNumber || phoneNumber.length !== 9) {
-            toast.error('NÃƒÂºmero de destino nÃƒÂ£o configurado ou invÃƒÂ¡lido. Configure na aba "NÃƒÂºmero".');
+            toast.error('Número de destino não configurado ou inválido. Configure na aba "Número".');
             return;
         }
         setSaqueLoading(true);
@@ -296,7 +296,7 @@ export const B2CConfigView = () => {
                 toast.error(`Ã¢ÂÅ’ ${data.error || 'Erro no saque'}`);
             }
         } catch (err: any) {
-            toast.error('Falha de conexÃƒÂ£o com a API B2C.');
+            toast.error('Falha de conexão com a API B2C.');
         } finally {
             setSaqueLoading(false);
         }
@@ -325,7 +325,7 @@ export const B2CConfigView = () => {
                             <Settings2 size={24} className="text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-white tracking-tight">ConfiguraÃƒÂ§ÃƒÂ£o B2C</h1>
+                            <h1 className="text-3xl font-black text-white tracking-tight">Configuração B2C</h1>
                             <p className="text-sm text-white/40 mt-0.5">KwikPay Ã‚Â· M-Pesa Ã‚Â· Business-to-Consumer</p>
                         </div>
                     </div>
@@ -387,10 +387,10 @@ export const B2CConfigView = () => {
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-500/5 border border-slate-500/20">
                                     <Info size={17} className="text-slate-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-slate-300 text-sm mb-1">ConfiguraÃƒÂ§ÃƒÂ£o Manual das Credenciais KwikPay</p>
+                                        <p className="font-semibold text-slate-300 text-sm mb-1">Configuração Manual das Credenciais KwikPay</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
-                                            As credenciais guardadas aqui tÃƒÂªm prioridade sobre as variÃƒÂ¡veis de ambiente.
-                                            SÃƒÂ£o usadas nas chamadas B2C via gateway KwikPay.
+                                            As credenciais guardadas aqui tÃƒÂªm prioridade sobre as variáveis de ambiente.
+                                            São usadas nas chamadas B2C via gateway KwikPay.
                                         </p>
                                     </div>
                                 </div>
@@ -432,7 +432,7 @@ export const B2CConfigView = () => {
                                                             : 'bg-white/[0.03] border-white/[0.09] text-white/40 hover:text-white/60'
                                                     )}
                                                 >
-                                                    {env === 'production' ? 'Ã°Å¸Å¸Â¢ ProduÃƒÂ§ÃƒÂ£o' : 'Ã°Å¸Å¸Â¡ Sandbox'}
+                                                    {env === 'production' ? 'Ã°Å¸Å¸Â¢ Produção' : 'Ã°Å¸Å¸Â¡ Sandbox'}
                                                 </button>
                                             ))}
                                         </div>
@@ -492,7 +492,7 @@ export const B2CConfigView = () => {
                                 {/* Active config summary */}
                                 {(clientId || walletId) && (
                                     <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.07] space-y-3">
-                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest">ConfiguraÃƒÂ§ÃƒÂ£o Activa</p>
+                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest">Configuração Activa</p>
                                         <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-xs">
                                             <div><span className="text-white/30">Client ID:</span> <span className="text-white/70 font-mono ml-1">{clientId || 'Ã¢â‚¬â€'}</span></div>
                                             <div><span className="text-white/30">Ambiente:</span> <span className={cn('font-semibold ml-1', environment === 'production' ? 'text-emerald-400' : 'text-amber-400')}>{environment}</span></div>
@@ -510,7 +510,7 @@ export const B2CConfigView = () => {
                                     <div>
                                         <h2 className="text-lg font-bold text-white">Saldo da Carteira KwikPay</h2>
                                         <p className="text-xs text-white/30 mt-0.5">
-                                            {lastRefresh ? `ÃƒÅ¡ltima actualizaÃƒÂ§ÃƒÂ£o: ${lastRefresh.toLocaleTimeString('pt-PT')}` : 'Clique em Atualizar para consultar'}
+                                            {lastRefresh ? `ÃƒÅ¡ltima actualização: ${lastRefresh.toLocaleTimeString('pt-PT')}` : 'Clique em Atualizar para consultar'}
                                         </p>
                                     </div>
                                     <button
@@ -542,7 +542,7 @@ export const B2CConfigView = () => {
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <Wallet size={16} className="text-emerald-400" />
-                                                        <span className="text-[11px] font-bold text-emerald-400/70 uppercase tracking-widest">Saldo DisponÃƒÂ­vel</span>
+                                                        <span className="text-[11px] font-bold text-emerald-400/70 uppercase tracking-widest">Saldo Disponível</span>
                                                     </div>
                                                     <p className="text-5xl lg:text-6xl font-black text-white tracking-tight">
                                                         {balance.balance !== undefined ? Number(balance.balance).toLocaleString('pt-MZ', { minimumFractionDigits: 2 }) : 'Ã¢â‚¬â€'}
@@ -619,17 +619,17 @@ export const B2CConfigView = () => {
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
                                     <Info size={17} className="text-blue-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-blue-300 text-sm mb-1">NÃƒÂºmero PadrÃƒÂ£o de Destino B2C</p>
+                                        <p className="font-semibold text-blue-300 text-sm mb-1">Número Padrão de Destino B2C</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
-                                            Este nÃƒÂºmero M-Pesa ÃƒÂ© usado automaticamente como destino quando nÃƒÂ£o ÃƒÂ© especificado
-                                            um nÃƒÂºmero durante o saque. Ãƒâ€° guardado no Supabase e sincronizado com o teu perfil.
+                                            Este número M-Pesa é usado automaticamente como destino quando não é especificado
+                                            um número durante o saque. Ãƒâ€° guardado no Supabase e sincronizado com o teu perfil.
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
                                     <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                                        <Phone size={11} className="text-blue-400" /> NÃƒÂºmero M-Pesa (9 dÃƒÂ­gitos)
+                                        <Phone size={11} className="text-blue-400" /> Número M-Pesa (9 dígitos)
                                     </label>
                                     <div className="flex gap-3">
                                         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.09] text-sm text-white/50 font-semibold whitespace-nowrap">
@@ -661,8 +661,8 @@ export const B2CConfigView = () => {
                                             )}
                                         >
                                             {phoneNumber.length === 9
-                                                ? <><CheckCircle2 size={13} /> NÃƒÂºmero vÃƒÂ¡lido Ã¢â‚¬â€ pronto para guardar</>
-                                                : <><AlertCircle size={13} /> Faltam {9 - phoneNumber.length} dÃƒÂ­gito(s)</>}
+                                                ? <><CheckCircle2 size={13} /> Número válido Ã¢â‚¬â€ pronto para guardar</>
+                                                : <><AlertCircle size={13} /> Faltam {9 - phoneNumber.length} dígito(s)</>}
                                         </motion.div>
                                     )}
 
@@ -690,8 +690,8 @@ export const B2CConfigView = () => {
                                     {phoneSaving
                                         ? <><Loader2 size={16} className="animate-spin" /> A guardar no Supabase...</>
                                         : phoneVerified
-                                            ? <><CheckCircle2 size={16} /> NÃƒÂºmero Guardado!</>
-                                            : <><Save size={16} /> Guardar como Destino PadrÃƒÂ£o</>}
+                                            ? <><CheckCircle2 size={16} /> Número Guardado!</>
+                                            : <><Save size={16} /> Guardar como Destino Padrão</>}
                                 </button>
 
                                 {/* Preview card */}
@@ -705,7 +705,7 @@ export const B2CConfigView = () => {
                                             </div>
                                             <div>
                                                 <p className="text-xl font-bold text-white font-mono">+258 {phoneNumber}</p>
-                                                <p className="text-xs text-white/35 mt-0.5">M-Pesa Ã‚Â· MoÃƒÂ§ambique</p>
+                                                <p className="text-xs text-white/35 mt-0.5">M-Pesa Ã‚Â· Moçambique</p>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -717,7 +717,7 @@ export const B2CConfigView = () => {
                         {activeTab === 'historico' && (
                             <div className="space-y-5">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-bold text-white">HistÃƒÂ³rico de TransaÃƒÂ§ÃƒÂµes B2C</h2>
+                                    <h2 className="text-lg font-bold text-white">Histórico de Transações B2C</h2>
                                     <button
                                         onClick={fetchTxs}
                                         disabled={txsLoading}
@@ -754,8 +754,8 @@ export const B2CConfigView = () => {
                                     <div className="flex flex-col items-center justify-center py-16 gap-4">
                                         <Activity size={40} className="text-white/10" />
                                         <div className="text-center">
-                                            <p className="text-white/35 text-sm font-semibold">Nenhuma transaÃƒÂ§ÃƒÂ£o encontrada</p>
-                                            <p className="text-white/20 text-xs mt-1">As transaÃƒÂ§ÃƒÂµes B2C aparecem aqui apÃƒÂ³s processamento</p>
+                                            <p className="text-white/35 text-sm font-semibold">Nenhuma transação encontrada</p>
+                                            <p className="text-white/20 text-xs mt-1">As transações B2C aparecem aqui após processamento</p>
                                         </div>
                                     </div>
                                 ) : (
@@ -790,7 +790,7 @@ export const B2CConfigView = () => {
                                                         <p className="text-xs text-white/30">{fmtDate(tx.created_at)}</p>
                                                         {tx.fees?.net_amount !== undefined && (
                                                             <p className="text-xs text-emerald-400 mt-0.5 font-semibold">
-                                                                LÃƒÂ­q: {fmtAmt(tx.fees.net_amount)}
+                                                                Líq: {fmtAmt(tx.fees.net_amount)}
                                                             </p>
                                                         )}
                                                     </div>
@@ -808,10 +808,10 @@ export const B2CConfigView = () => {
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20">
                                     <AlertCircle size={17} className="text-rose-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-rose-300 text-sm mb-1">Ã¢Å¡Â Ã¯Â¸Â Payout Real Ã¢â‚¬â€ AtenÃƒÂ§ÃƒÂ£o</p>
+                                        <p className="font-semibold text-rose-300 text-sm mb-1">Ã¢Å¡Â Ã¯Â¸Â Payout Real Ã¢â‚¬â€ Atenção</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
-                                            Este mÃƒÂ³dulo executa um payout B2C real via KwikPay M-Pesa.
-                                            Usa um nÃƒÂºmero e valor corretos. TransaÃƒÂ§ÃƒÂµes aprovadas nÃƒÂ£o sÃƒÂ£o reembolsadas automaticamente.
+                                            Este módulo executa um payout B2C real via KwikPay M-Pesa.
+                                            Usa um número e valor corretos. Transações aprovadas não são reembolsadas automaticamente.
                                         </p>
                                     </div>
                                 </div>
@@ -850,7 +850,7 @@ export const B2CConfigView = () => {
                                     {/* Phone */}
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                                            <Phone size={11} className="text-rose-400" /> NÃƒÂºmero Destino
+                                            <Phone size={11} className="text-rose-400" /> Número Destino
                                         </label>
                                         <div className="flex gap-2">
                                             <div className="flex items-center px-3 py-3 rounded-xl bg-white/[0.04] border border-white/[0.09] text-xs text-white/40 whitespace-nowrap">
@@ -866,7 +866,7 @@ export const B2CConfigView = () => {
                                         {phoneNumber && testPhone !== phoneNumber && (
                                             <button onClick={() => setTestPhone(phoneNumber)}
                                                 className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
-                                                <ArrowUpRight size={12} /> Usar nÃƒÂºmero padrÃƒÂ£o ({phoneNumber})
+                                                <ArrowUpRight size={12} /> Usar número padrão ({phoneNumber})
                                             </button>
                                         )}
                                     </div>
@@ -888,12 +888,12 @@ export const B2CConfigView = () => {
                                 {parseFloat(testAmount) > 0 && (
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                         className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.07]">
-                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">PrevisÃƒÂ£o de Taxas Ã‚Â· 7% (mÃƒÂ­n. 10 MZN)</p>
+                                        <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">Previsão de Taxas Ã‚Â· 7% (mín. 10 MZN)</p>
                                         <div className="grid grid-cols-3 gap-4 text-center">
                                             {[
                                                 { label: 'Valor Enviado', val: parseFloat(testAmount), color: 'text-white' },
                                                 { label: 'Taxa KwikPay', val: -feePreview(parseFloat(testAmount)).fee, color: 'text-rose-400' },
-                                                { label: 'LÃƒÂ­quido Recebido', val: feePreview(parseFloat(testAmount)).net, color: 'text-emerald-400' },
+                                                { label: 'Líquido Recebido', val: feePreview(parseFloat(testAmount)).net, color: 'text-emerald-400' },
                                             ].map(({ label, val, color }) => (
                                                 <div key={label}>
                                                     <p className="text-[10px] text-white/30 mb-2 uppercase tracking-wide">{label}</p>
