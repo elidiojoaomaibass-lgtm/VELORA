@@ -8,8 +8,7 @@ export const config = {
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
-import { sendPushNotificationV1 as sendPushNotification, getUserTokens } from '../src/lib/push_v1.js';
-import { getLowtrackToken } from '../src/lib/lowtrack.js';
+// push_v1 and lowtrack are imported dynamically inside handlers to avoid tsconfig boundary issues
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
@@ -164,14 +163,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
 
-      // 1. Push notification (Pushcut/FCM)
+      // 1. Push notification (FCM)
       if (userId) {
         notifications.push((async () => {
           try {
+            const { sendPushNotificationV1, getUserTokens } = await import('../src/lib/push_v1.js');
             const tokens = await getUserTokens(userId);
             const val = amount ? Number(amount).toLocaleString('pt-PT') : '';
             for (const token of tokens) {
-              await sendPushNotification(token, {
+              await sendPushNotificationV1(token, {
                 title: isSuccess ? 'VELORA — Nova Venda! 🎉' : 'VELORA — Venda Falhada ⚠️',
                 body: isSuccess ? `Venda aprovada: ${val} MT via ${method || 'Gateway'}` : `Transação de ${val} MT falhou.`,
               });
