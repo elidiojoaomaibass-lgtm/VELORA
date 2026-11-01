@@ -127,7 +127,7 @@ export class E2Payments {
         let data = null;
         try {
             data = rawText ? JSON.parse(rawText) : null;
-        } catch (e) {
+        } catch {
             console.warn('[E2Payments] Failed to parse JSON body');
         }
 
@@ -146,3 +146,4 @@ export class E2Payments {
         return data;
     }
 }
+

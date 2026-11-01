@@ -614,7 +614,7 @@ export const SaqueView = () => {
                                     onClick={() => setActiveTab('extrato_kwikpay')}
                                     className="text-[10px] font-black text-slate-600 dark:text-slate-400 hover:underline uppercase tracking-wider"
                                 >
-                                    Ver Extrato Gateway Ã¢â€ â€™
+                                    Ver Extrato Gateway Ã¢â€ â€™
                                 </button>
                             </div>
 
@@ -726,7 +726,7 @@ export const SaqueView = () => {
                                 Extrato de Transações B2C (Servidor KwikPay)
                             </h3>
                             <p className="text-[10px] text-slate-400 font-medium">
-                                Consulta direta ÃƒÂ  API oficial: <code className="font-bold">https://kwikpay.web.tr/api/v1/transactions</code>
+                                Consulta direta ÃƒÂ  API oficial: <code className="font-bold">https://kwikpay.web.tr/api/v1/transactions</code>
                             </p>
                         </div>
                         <div className="flex items-center gap-2">

@@ -161,7 +161,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                         method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
                     })
                 }).catch(err => console.warn('Finalize payment dispatch failed:', err));
-            } catch (e) {
+            } catch {
                 console.warn('Failed to dispatch webhook / finalize-payment:', e);
             }
 
@@ -202,7 +202,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                             : p
                     )
                 );
-            } catch (e) {
+            } catch {
                 console.warn('Failed to increment product sales:', e);
             }
 
@@ -217,7 +217,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
             });
             window.location.href = `/obrigado?${params.toString()}`;
 
-        } catch (err: any) {
+        } catch {
             // Extrair mensagem amigável do erro da API E2Payments (pode ser um objeto)
             let errorMsg = 'Ocorreu um erro. Tente novamente.';
             if (typeof err === 'string') {
@@ -659,3 +659,4 @@ const ShoppingCartIcon = () => (
         <path d="M16 10C16 11.0609 15.5786 12.0783 14.8284 12.8284C14.0783 13.5786 13.0609 14 12 14C10.9391 14 9.92172 13.5786 9.17157 12.8284C8.42143 12.0783 8 11.0609 8 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
+

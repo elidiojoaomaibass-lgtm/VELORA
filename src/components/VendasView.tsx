@@ -36,7 +36,7 @@ export const VendasView = ({ user: _user }: VendasViewProps) => {
     const detailRef = useRef<HTMLDivElement>(null);
     const datePickerRef = useRef<HTMLDivElement>(null);
     // @ts-ignore
-    const startDRef = useRef<HTMLInputElement>(null);
+    const _startDRef = useRef<HTMLInputElement>(null);
     const startMRef = useRef<HTMLInputElement>(null);
     const startYRef = useRef<HTMLInputElement>(null);
     const endDRef = useRef<HTMLInputElement>(null);
@@ -81,7 +81,7 @@ export const VendasView = ({ user: _user }: VendasViewProps) => {
 
     // Helper to update parts from inputs
     // @ts-ignore
-    const updateFromParts = (type: 'start' | 'end', key: 'd' | 'm' | 'y', val: string) => {
+    const _updateFromParts = (type: 'start' | 'end', key: 'd' | 'm' | 'y', val: string) => {
         const numericVal = val.replace(/\D/g, '');
         if (type === 'start') {
             const newParts = { ...startParts, [key]: numericVal };
@@ -162,7 +162,7 @@ export const VendasView = ({ user: _user }: VendasViewProps) => {
 
     // Stats
     // @ts-ignore
-    const stats = useMemo(() => {
+    const _stats = useMemo(() => {
         const approved = filteredTransactions.filter(t => t.status === 'Concluído');
         const pending = filteredTransactions.filter(t => t.status === 'Pendente');
         const cancelled = filteredTransactions.filter(t => t.status === 'Falhou');

@@ -175,7 +175,7 @@ export const AfiliadosView = () => {
                     {['Todos', 'Pendente', 'Aprovado', 'Rejeitado'].map((status) => (
                         <button
                             key={status}
-                            onClick={() => setFilterStatus(status as any)}
+                            onClick={() => setFilterStatus(status as 'Todos' | 'Pendente' | 'Aprovado' | 'Rejeitado')}
                             className={cn(
                                 "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                                 filterStatus === status

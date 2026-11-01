@@ -36,7 +36,7 @@ export const ProdutosView = () => {
         }
         try {
             localStorage.setItem(`checkout_product_${product.id}`, JSON.stringify(product));
-        } catch (e) {}
+        } catch {}
 
         const queryParams: Record<string, string> = {
             id: product.id,
@@ -74,7 +74,7 @@ export const ProdutosView = () => {
         }
         try {
             localStorage.setItem(`checkout_product_${product.id}`, JSON.stringify(product));
-        } catch (e) {}
+        } catch {}
 
         const queryParams: Record<string, string> = {
             id: product.id,
@@ -255,7 +255,7 @@ export const ProdutosView = () => {
             }
 
             closeModal();
-        } catch (err: any) {
+        } catch {
             console.error('Erro ao submeter produto:', err);
             closeModal();
         }
@@ -935,3 +935,4 @@ export const ProdutosView = () => {
         </div >
     );
 };
+

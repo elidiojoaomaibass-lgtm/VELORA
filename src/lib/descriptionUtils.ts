@@ -32,7 +32,7 @@ export function cleanProductName(description?: string): string {
   name = name.replace(/\(Rejected:[^)]+\)/gi, '');
 
   // Strip any trailing delimiters and whitespace
-  name = name.replace(/[\-_:]+/g, ' ');
+  name = name.replace(/[-_:]+/g, ' ');
   // Split on common separators and keep the first non‑empty token
   const separators = [/\s{2,}/, /\s*\|\s*/, /\s*-\s*/, /\s*\(\s*/, /\s*\)\s*/];
   for (const sep of separators) {

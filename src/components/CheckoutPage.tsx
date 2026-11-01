@@ -2,8 +2,7 @@
 import {
     X, Check,
     Loader2,
-    AlertCircle,
-    Smartphone
+    AlertCircle
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,9 +19,10 @@ import { ScarcityNotification } from './ScarcityNotification';
 
 export const CheckoutPage = () => {
     const { addTransaction, updateTransactionStatus } = useTransactionsStore();
-    const [method, setMethod] = useState<'mpesa' | 'emola'>('emola');
+    const [method, _setMethod] = useState<'mpesa' | 'emola'>('emola');
     const [status, setStatus] = useState<'idle' | 'processing' | 'success'>('idle');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [pendingMessage, setPendingMessage] = useState<string | null>(null);
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
@@ -48,7 +48,7 @@ export const CheckoutPage = () => {
                     if (found) return found;
                 }
             }
-        } catch (e) {}
+        } catch {}
         return null;
     };
 
@@ -61,7 +61,7 @@ export const CheckoutPage = () => {
         storedImage = urlImage;
     }
     // placeholder that will be possibly updated after fetch
-    let productImage = storedImage || urlImage;
+    const productImage = storedImage || urlImage;
 
     const [dbProduct, setDbProduct] = useState<any>(() => {
         try {
@@ -110,7 +110,7 @@ export const CheckoutPage = () => {
                     if (mapped.image) {
                         localStorage.setItem(`checkout_img_${productId}`, mapped.image);
                     }
-                } catch (e) {
+                } catch {
                     console.error('Error saving to localStorage', e);
                 }
                 
@@ -208,7 +208,7 @@ export const CheckoutPage = () => {
             setStatus('idle');
             return;
         }
-        const detectedMethod: 'mpesa' | 'emola' = 'emola';
+        const _detectedMethod: 'mpesa' | 'emola' = 'emola';
 
         let currentTxId = '';
 
@@ -294,7 +294,7 @@ export const CheckoutPage = () => {
                             setErrorMessage('Tempo de espera esgotado. Tente novamente.');
                             setStatus('idle');
                         }
-                    } catch (e) {
+                    } catch {
                         // ignore poll errors
                     }
                 }, 2000);
@@ -379,7 +379,7 @@ export const CheckoutPage = () => {
 
             // (Movemos isto para dentro de finalizeAndRedirect)
             } // fechar finalizeAndRedirect
-        } catch (err: any) {
+        } catch {
             setErrorMessage(err.message || 'Ocorreu um erro ao processar a compra. Tente novamente.');
             setStatus('idle');
 
@@ -616,3 +616,4 @@ export const CheckoutPage = () => {
         </div>
     );
 };
+

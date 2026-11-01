@@ -601,3 +601,4 @@ export function Dashboard({ user, onLogout, setView, toggleSidebar }: DashboardP
     );
 }
 
+

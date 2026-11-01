@@ -7,8 +7,12 @@ export const initFacebookPixel = (pixelId: string) => {
         return;
     }
 
-    w.fbq = function () {
-        w.fbq.callMethod ? w.fbq.callMethod.apply(w.fbq, arguments) : w.fbq.queue.push(arguments);
+    w.fbq = function (...args: unknown[]) {
+        if (w.fbq.callMethod) {
+            w.fbq.callMethod(...args);
+        } else {
+            w.fbq.queue.push(args);
+        }
     };
     if (!w._fbq) w._fbq = w.fbq;
     w.fbq.push = w.fbq;

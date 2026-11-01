@@ -127,14 +127,14 @@ export const B2CConfigView = () => {
     const [testPhone, setTestPhone] = useState('');
     const [testRef, setTestRef] = useState(`TEST_${Date.now().toString().slice(-6)}`);
     const [testLoading, setTestLoading] = useState(false);
-    const [testResult, setTestResult] = useState<any>(null);
+    const [testResult, setTestResult] = useState<unknown>(null);
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Load from storage on mount Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     useEffect(() => {
         setClientId(localStorage.getItem(LS_CLIENT_ID) || (import.meta.env.VITE_KWIKPAY_CLIENT_ID ?? ''));
         setClientSecret(localStorage.getItem(LS_CLIENT_SECRET) || (import.meta.env.VITE_KWIKPAY_CLIENT_SECRET ?? ''));
         setWalletId(localStorage.getItem(LS_WALLET_ID) || (import.meta.env.VITE_KWIKPAY_WALLET_ID ?? ''));
-        setEnvironment((localStorage.getItem(LS_ENV) as any) || 'production');
+        setEnvironment((localStorage.getItem(LS_ENV) as 'production' | 'sandbox') || 'production');
         const stored = localStorage.getItem(LS_PHONE);
         if (stored) setTestPhone(stored);
 
@@ -250,9 +250,14 @@ export const B2CConfigView = () => {
             const data = await res.json();
             const ok = res.ok && data.success !== false;
             setTestResult({ ok, data });
-            ok ? toast.success('Ã¢Å“â€¦ Payout de teste processado!') : toast.error(`Ã¢ÂÅ’ ${data.error || 'Erro no payout'}`);
-        } catch (err: any) {
-            setTestResult({ ok: false, data: { error: err.message } });
+            if (ok) {
+                toast.success('Payout de teste processado com sucesso!');
+            } else {
+                toast.error(data.error || 'Erro no payout');
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Erro desconhecido';
+            setTestResult({ ok: false, data: { error: message } });
             toast.error('Falha de conexão com a API B2C.');
         } finally {
             setTestLoading(false);
@@ -295,7 +300,7 @@ export const B2CConfigView = () => {
             } else {
                 toast.error(`Ã¢ÂÅ’ ${data.error || 'Erro no saque'}`);
             }
-        } catch (err: any) {
+        } catch {
             toast.error('Falha de conexão com a API B2C.');
         } finally {
             setSaqueLoading(false);
@@ -808,7 +813,7 @@ export const B2CConfigView = () => {
                                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20">
                                     <AlertCircle size={17} className="text-rose-400 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-rose-300 text-sm mb-1">Ã¢Å¡Â Ã¯Â¸Â Payout Real Ã¢â‚¬â€ Atenção</p>
+                                        <p className="font-semibold text-rose-300 text-sm mb-1">Payout Real - Atencao</p>
                                         <p className="text-xs text-white/45 leading-relaxed">
                                             Este módulo executa um payout B2C real via KwikPay M-Pesa.
                                             Usa um número e valor corretos. Transações aprovadas não são reembolsadas automaticamente.
@@ -959,5 +964,6 @@ export const B2CConfigView = () => {
         </div>
     );
 };
+
 
 

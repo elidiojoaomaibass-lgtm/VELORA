@@ -31,7 +31,7 @@ const getInitialLocalProducts = (): Product[] => {
         try {
             const parsed = JSON.parse(stored);
             if (Array.isArray(parsed)) return parsed;
-        } catch (e) {
+        } catch {
             console.error('Failed to parse products from localStorage', e);
         }
     }
@@ -179,7 +179,7 @@ const getInitialProducts = async (): Promise<Product[]> => {
                         image: p.image || imgMap.get(p.id) || '',
                     }));
                 }
-            } catch (e) {
+            } catch {
                 console.warn('Could not fetch product_images:', e);
             }
 
@@ -193,7 +193,7 @@ const getInitialProducts = async (): Promise<Product[]> => {
                     try {
                         const payload = formatProductForSupabase(lp, lp.user_email || userEmail);
                         supabase.from('products').upsert(payload, { onConflict: 'id' }).then(() => {});
-                    } catch (e) {}
+                    } catch {}
                 }
             });
 
@@ -202,7 +202,7 @@ const getInitialProducts = async (): Promise<Product[]> => {
         }
 
         return localProducts;
-    } catch (e) {
+    } catch {
         console.warn('Failed to fetch products from Supabase:', e);
         return localProducts;
     }
@@ -261,7 +261,7 @@ export const useProductsStore = () => {
             if (completeProduct.image) {
                 localStorage.setItem(`checkout_img_${completeProduct.id}`, completeProduct.image);
             }
-        } catch (e) {}
+        } catch {}
 
         sendLocalNotification('📦 Novo Produto Salvo!', {
             body: `O produto "${product.name}" foi criado e salvo com sucesso.`,
@@ -296,14 +296,14 @@ export const useProductsStore = () => {
         try {
             localStorage.removeItem(`checkout_product_${id}`);
             localStorage.removeItem(`checkout_img_${id}`);
-        } catch (e) {}
+        } catch {}
         toast.success('Produto removido com sucesso!');
 
         // Remove do Supabase de forma assíncrona
         try {
             await supabase.from('products').delete().eq('id', id);
             await supabase.from('product_images').delete().eq('product_id', id).catch(() => {});
-        } catch (e) {
+        } catch {
             console.warn('Erro ao remover produto do Supabase:', e);
         }
     };
@@ -326,7 +326,7 @@ export const useProductsStore = () => {
             if (completeProduct.image) {
                 localStorage.setItem(`checkout_img_${completeProduct.id}`, completeProduct.image);
             }
-        } catch (e) {}
+        } catch {}
 
         if (oldProduct && oldProduct.status !== 'Ativo' && completeProduct.status === 'Ativo') {
             sendLocalNotification('✅ Produto Aprovado!', {
@@ -352,7 +352,7 @@ export const useProductsStore = () => {
                     url: completeProduct.image
                 }, { onConflict: 'product_id' }).catch(() => {});
             }
-        } catch (e) {
+        } catch {
             console.warn('Erro ao atualizar produto no Supabase:', e);
         }
     };
@@ -382,7 +382,7 @@ const getInitialRequests = (): AffiliateRequest[] => {
     if (stored) {
         try {
             return JSON.parse(stored);
-        } catch (e) {
+        } catch {
             console.error('Failed to parse requests from localStorage', e);
         }
     }
@@ -531,7 +531,7 @@ const getInitialTransactions = (): Transaction[] => {
     if (stored) {
         try {
             return JSON.parse(stored);
-        } catch (e) {
+        } catch {
             console.error('Failed to parse transactions', e);
         }
     }
@@ -657,7 +657,7 @@ export const useTransactionsStore = () => {
                     });
                 })
                 .subscribe();
-        } catch (e) {
+        } catch {
             console.warn('Falha ao assinar canal em tempo real do Supabase:', e);
         }
 
@@ -679,7 +679,7 @@ export const useTransactionsStore = () => {
             if (channel) {
                 try {
                     supabase.removeChannel(channel);
-                } catch (e) {}
+                } catch {}
             }
         };
     }, []);
@@ -755,10 +755,11 @@ export const useTransactionsStore = () => {
             .from('transactions')
             .update(updatePayload)
             .eq('id', id);
-        } catch (e) {
+        } catch {
             console.warn('Erro ao atualizar status no Supabase:', e);
         }
     };
 
     return { transactions, addTransaction, updateTransactionStatus };
 };
+

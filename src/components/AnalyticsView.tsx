@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -23,8 +23,6 @@ export const AnalyticsView = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [startParts, setStartParts] = useState({ d: '', m: '', y: '' });
-    const [endParts, setEndParts] = useState({ d: '', m: '', y: '' });
 
     // Refs for auto-focus
     const startDRef = useRef<HTMLInputElement>(null);
@@ -48,29 +46,37 @@ export const AnalyticsView = () => {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // Sync parts when startDate changes
-    useEffect(() => {
-        if (startDate) {
-            const [y, m, d] = startDate.split('-');
-            setStartParts({ d, m, y });
-        }
+    // Derived from startDate — no useEffect needed
+    const startParts = useMemo(() => {
+        if (!startDate) return { d: '', m: '', y: '' };
+        const [y, m, d] = startDate.split('-');
+        return { d, m, y };
     }, [startDate]);
 
-    // Sync parts when endDate changes
-    useEffect(() => {
-        if (endDate) {
-            const [y, m, d] = endDate.split('-');
-            setEndParts({ d, m, y });
-        }
+    // Derived from endDate — no useEffect needed
+    const endParts = useMemo(() => {
+        if (!endDate) return { d: '', m: '', y: '' };
+        const [y, m, d] = endDate.split('-');
+        return { d, m, y };
     }, [endDate]);
+
+    // Mutable working copies so user can type freely before a full date is formed
+    const [startPartsEdit, setStartPartsEdit] = useState({ d: '', m: '', y: '' });
+    const [endPartsEdit, setEndPartsEdit] = useState({ d: '', m: '', y: '' });
+
+    // Keep edit copies in sync when programmatic changes happen (e.g. quick-fill buttons)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { setStartPartsEdit(startParts); }, [startDate]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { setEndPartsEdit(endParts); }, [endDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Helper to update date from parts with auto-focus
     const updateFromParts = (type: 'start' | 'end', key: 'd' | 'm' | 'y', val: string) => {
         const numericVal = val.replace(/\D/g, '');
 
         if (type === 'start') {
-            const newParts = { ...startParts, [key]: numericVal };
-            setStartParts(newParts);
+            const newParts = { ...startPartsEdit, [key]: numericVal };
+            setStartPartsEdit(newParts);
             if (key === 'd' && numericVal.length === 2) startMRef.current?.focus();
             if (key === 'm' && numericVal.length === 2) startYRef.current?.focus();
             if (key === 'y' && numericVal.length === 4) endDRef.current?.focus();
@@ -78,8 +84,8 @@ export const AnalyticsView = () => {
                 setStartDate(`${newParts.y}-${newParts.m}-${newParts.d}`);
             }
         } else {
-            const newParts = { ...endParts, [key]: numericVal };
-            setEndParts(newParts);
+            const newParts = { ...endPartsEdit, [key]: numericVal };
+            setEndPartsEdit(newParts);
             if (key === 'd' && numericVal.length === 2) endMRef.current?.focus();
             if (key === 'm' && numericVal.length === 2) endYRef.current?.focus();
             if (newParts.d.length === 2 && newParts.m.length === 2 && newParts.y.length === 4) {
@@ -89,7 +95,7 @@ export const AnalyticsView = () => {
     };
 
     // Helper to filter transactions by date range
-    const getFilteredTransactions = () => {
+    const getFilteredTransactions = useCallback(() => {
         const now = new Date();
         return transactions.filter(tx => {
             const txDate = new Date(tx.createdAt);
@@ -123,7 +129,7 @@ export const AnalyticsView = () => {
             }
             return true;
         });
-    };
+    }, [period, startDate, endDate, transactions]);
 
     // Filtering logic that generates UI-optimized data per period
     const filteredData = useMemo(() => {
@@ -160,7 +166,7 @@ export const AnalyticsView = () => {
                 perdido: dayTxs.reduce((acc, curr) => acc + (curr.status === 'Falhou' ? curr.amount : 0), 0)
             };
         });
-    }, [period, startDate, endDate, transactions]);
+    }, [getFilteredTransactions, period, startDate, endDate, transactions]);
 
     // Calculate dynamic stats based on filtered data
     const stats = useMemo(() => {
@@ -180,7 +186,7 @@ export const AnalyticsView = () => {
             pendingTransactions: payments.filter(t => t.status === 'Pendente').length,
             totalTransactions: payments.length
         };
-    }, [filteredData, period, transactions]);
+    }, [getFilteredTransactions, filteredData, period, transactions]);
 
     const topProducts = useMemo(() =>
         [...products].sort((a, b) => b.revenue - a.revenue).slice(0, 5),
@@ -317,7 +323,7 @@ export const AnalyticsView = () => {
                                                         type="text"
                                                         placeholder="DD"
                                                         maxLength={2}
-                                                        value={startParts.d}
+                                                        value={startPartsEdit.d}
                                                         onChange={(e) => updateFromParts('start', 'd', e.target.value)}
                                                         className="w-12 bg-transparent text-lg font-black focus:outline-none text-white placeholder:text-white/10 text-center"
                                                     />
@@ -327,7 +333,7 @@ export const AnalyticsView = () => {
                                                         type="text"
                                                         placeholder="MM"
                                                         maxLength={2}
-                                                        value={startParts.m}
+                                                        value={startPartsEdit.m}
                                                         onChange={(e) => updateFromParts('start', 'm', e.target.value)}
                                                         className="w-12 bg-transparent text-lg font-black focus:outline-none text-white placeholder:text-white/10 text-center"
                                                     />
@@ -337,7 +343,7 @@ export const AnalyticsView = () => {
                                                         type="text"
                                                         placeholder="YYYY"
                                                         maxLength={4}
-                                                        value={startParts.y}
+                                                        value={startPartsEdit.y}
                                                         onChange={(e) => updateFromParts('start', 'y', e.target.value)}
                                                         className="w-20 bg-transparent text-lg font-black focus:outline-none text-white placeholder:text-white/10 text-center"
                                                     />
@@ -345,7 +351,7 @@ export const AnalyticsView = () => {
                                                         onClick={() => {
                                                             try {
                                                                 (startInputRef.current as any)?.showPicker();
-                                                            } catch (e) {
+                                                            } catch {
                                                                 startInputRef.current?.focus();
                                                             }
                                                         }}
@@ -396,7 +402,7 @@ export const AnalyticsView = () => {
                                                         type="text"
                                                         placeholder="DD"
                                                         maxLength={2}
-                                                        value={endParts.d}
+                                                        value={endPartsEdit.d}
                                                         onChange={(e) => updateFromParts('end', 'd', e.target.value)}
                                                         className="w-12 bg-transparent text-lg font-black focus:outline-none text-white placeholder:text-white/10 text-center"
                                                     />
@@ -406,7 +412,7 @@ export const AnalyticsView = () => {
                                                         type="text"
                                                         placeholder="MM"
                                                         maxLength={2}
-                                                        value={endParts.m}
+                                                        value={endPartsEdit.m}
                                                         onChange={(e) => updateFromParts('end', 'm', e.target.value)}
                                                         className="w-12 bg-transparent text-lg font-black focus:outline-none text-white placeholder:text-white/10 text-center"
                                                     />
@@ -416,7 +422,7 @@ export const AnalyticsView = () => {
                                                         type="text"
                                                         placeholder="YYYY"
                                                         maxLength={4}
-                                                        value={endParts.y}
+                                                        value={endPartsEdit.y}
                                                         onChange={(e) => updateFromParts('end', 'y', e.target.value)}
                                                         className="w-20 bg-transparent text-lg font-black focus:outline-none text-white placeholder:text-white/10 text-center"
                                                     />
@@ -424,7 +430,7 @@ export const AnalyticsView = () => {
                                                         onClick={() => {
                                                             try {
                                                                 (endInputRef.current as any)?.showPicker();
-                                                            } catch (e) {
+                                                            } catch {
                                                                 endInputRef.current?.focus();
                                                             }
                                                         }}
@@ -727,3 +733,4 @@ export const AnalyticsView = () => {
         </div>
     );
 };
+

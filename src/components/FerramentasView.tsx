@@ -29,7 +29,7 @@ export const FerramentasView = () => {
         if (saved) {
             try {
                 return JSON.parse(saved);
-            } catch (e) {
+            } catch {
                 // ignore
             }
         }
@@ -904,3 +904,4 @@ export const FerramentasView = () => {
         </div>
     );
 };
+
