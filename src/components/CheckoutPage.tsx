@@ -270,26 +270,28 @@ export const CheckoutPage = () => {
                 setErrorMessage(null); // Clear any error
                 setPendingMessage(result.message || 'A aguardar confirmação no telemóvel. Por favor, introduza o seu PIN...');
                 
-                // Poll the transaction status from Supabase to check if webhook approved it
+                // Poll via endpoint server-side (evita RLS que bloqueia leituras anonimas)
                 let attempts = 0;
                 const pollInterval = setInterval(async () => {
                     attempts++;
                     try {
-                        const { createClient } = await import('@supabase/supabase-js');
-                        const supabase = createClient(
-                            import.meta.env.VITE_SUPABASE_URL,
-                            import.meta.env.VITE_SUPABASE_ANON_KEY
-                        );
-                        const { data } = await supabase.from('transactions').select('status').eq('id', currentTxId).single();
-                        
-                        if (data?.status === 'Concluído') {
+                        const pollRes = await fetch(`/api/transaction-status?id=${encodeURIComponent(currentTxId)}`);
+                        if (pollRes.ok) {
+                            const { status: txStatus } = await pollRes.json();
+                            if (txStatus === 'Concluído') {
+                                clearInterval(pollInterval);
+                                setPendingMessage(null);
+                                finalizeAndRedirect();
+                            } else if (txStatus === 'Falhou' || attempts > 60) {
+                                clearInterval(pollInterval);
+                                setPendingMessage(null);
+                                setErrorMessage('O pagamento expirou ou foi cancelado no telemóvel. Tente novamente.');
+                                setStatus('idle');
+                            }
+                        } else if (attempts > 60) {
                             clearInterval(pollInterval);
                             setPendingMessage(null);
-                            finalizeAndRedirect();
-                        } else if (data?.status === 'Falhou' || attempts > 60) { // 60 attempts * 2s = 2 mins
-                            clearInterval(pollInterval);
-                            setPendingMessage(null);
-                            setErrorMessage('O pagamento expirou ou foi cancelado no telemóvel. Tente novamente.');
+                            setErrorMessage('Tempo de espera esgotado. Tente novamente.');
                             setStatus('idle');
                         }
                     } catch (e) {
