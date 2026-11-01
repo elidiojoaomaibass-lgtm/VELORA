@@ -540,9 +540,16 @@ const getInitialTransactions = (): Transaction[] => {
 
 let globalTransactions = getInitialTransactions();
 const transactionListeners = new Set<(txs: Transaction[]) => void>();
+let globalRealtimeConnected = false;
+const realtimeListeners = new Set<(connected: boolean) => void>();
+const setRealtimeConnected = (v: boolean) => {
+    globalRealtimeConnected = v;
+    realtimeListeners.forEach(l => l(v));
+};
 
 export const useTransactionsStore = () => {
     const [transactions, setTransactions] = useState<Transaction[]>(globalTransactions);
+    const [isRealtimeConnected, setIsRealtimeConnected] = useState(globalRealtimeConnected);
 
     const updateTransactions = (newTxs: Transaction[]) => {
         globalTransactions = newTxs;
@@ -552,13 +559,12 @@ export const useTransactionsStore = () => {
 
     useEffect(() => {
         const listener = (newTxs: Transaction[]) => setTransactions(newTxs);
+        const rtListener = (v: boolean) => setIsRealtimeConnected(v);
         transactionListeners.add(listener);
-
-        console.log('Supabase client initialized:', supabase);
+        realtimeListeners.add(rtListener);
 
         const fetchTransactions = async () => {
             try {
-
                 let query = supabase.from('transactions').select('*').order('createdat', { ascending: false });
                 
                 // Multi-Tenant Isolation
@@ -567,16 +573,13 @@ export const useTransactionsStore = () => {
                 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
                 
                 if (userEmail && userEmail.toLowerCase() !== ADMIN_EMAIL) {
-                    // Filtrar por email do merchant (PostgreSQL normaliza para lowercase)
                     query = query.or(`customeremail.eq.${userEmail},customeremail.is.null`);
                 }
 
                 const { data, error } = await query;
-                console.log('Supabase fetch result:', { data, error });
                 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
+
                 if (data && data.length > 0) {
                     const mapped = data.map((tx: any) => ({
                         ...tx,
@@ -585,8 +588,6 @@ export const useTransactionsStore = () => {
                     }));
                     updateTransactions(mapped);
                 } else {
-                    // Fallback sem filtro de email para depurar possivel nome de coluna errado
-                    console.warn('Nenhuma transação com filtro email, tentando sem filtro...');
                     const { data: allData } = await supabase.from('transactions').select('*').order('createdat', { ascending: false });
                     if (allData && allData.length > 0) {
                         const mapped = allData.map((tx: any) => ({
@@ -596,16 +597,12 @@ export const useTransactionsStore = () => {
                         }));
                         updateTransactions(mapped);
                     } else {
-                        // Se estiver vazio no Supabase, tenta carregar as transações locais salvas
                         const local = getInitialTransactions();
-                        if (local.length > 0) {
-                            updateTransactions(local);
-                        }
+                        if (local.length > 0) updateTransactions(local);
                     }
                 }
             } catch (err) {
                 console.warn('Erro ao conectar ao Supabase (usando localStorage como backup offline):', err);
-                // Carrega transações offline salvas em localStorage
                 const local = getInitialTransactions();
                 updateTransactions(local);
             }
@@ -613,74 +610,89 @@ export const useTransactionsStore = () => {
 
         fetchTransactions();
 
-        // Inscreve no canal em tempo real para escutar atualizações de transações
+        // ─── Canal Realtime com notificações para TODOS os estados ───
         let channel: any = null;
-        try {
-            channel = supabase
-                .channel('public-transactions-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (payload: any) => {
-                    console.log('Realtime transaction update:', payload);
-                    fetchTransactions();
-                    
-                    // Trigger System Notification for Payments
-                    if (payload.eventType === 'INSERT' && payload.new.type === 'payment' && payload.new.status === 'Concluído') {
-                        const val = Number(payload.new.amount).toLocaleString('pt-PT');
-                        // const method = payload.new.method || 'VELORA Pay'; // removed unused variable
-                        sendLocalNotification('Você recebeu um novo pedido! 🎉', {
-                            body: `Venda aprovada de ${val} MT ${payload.new.method}`,
+        const subscribeRealtime = () => {
+            try {
+                channel = supabase
+                    .channel('velora-transactions-rt')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (payload: any) => {
+                        // Re-fetch para garantir dados frescos
+                        fetchTransactions();
+
+                        const tx = payload.new || {};
+                        const val = tx.amount ? Number(tx.amount).toLocaleString('pt-PT') : '?';
+                        const mth = tx.method || 'Gateway';
+                        const customer = tx.customerName || tx.customername || 'Cliente';
+
+                        if (tx.type === 'payment') {
+                            if (tx.status === 'Pendente' && payload.eventType === 'INSERT') {
+                                // Nova venda iniciada — aparece imediatamente
+                                sendLocalNotification('⏳ Nova venda iniciada!', {
+                                    body: `${customer} · ${val} MT via ${mth} — aguardando confirmação`,
+                                    icon: '/logo.png'
+                                });
+                            } else if (tx.status === 'Concluído') {
+                                // Venda aprovada
+                                sendLocalNotification('🎉 Venda aprovada!', {
+                                    body: `${customer} · ${val} MT via ${mth}`,
+                                    icon: '/logo.png'
+                                });
+                            } else if (tx.status === 'Falhou') {
+                                // Venda falhada
+                                sendLocalNotification('❌ Pagamento falhado', {
+                                    body: `${customer} · ${val} MT via ${mth} — falhou`,
+                                    icon: '/logo.png'
+                                });
+                            }
+                        }
+
+                        if (tx.type === 'withdrawal' && tx.status === 'Concluído') {
+                            sendLocalNotification('💸 Levantamento Aprovado!', {
+                                body: `Saque de ${val} MZN concluído com sucesso.`,
+                                icon: '/logo.png'
+                            });
+                        }
+                    })
+                    .on('broadcast', { event: 'test_push' }, (payload: any) => {
+                        const val = Number(payload.payload?.amount || 0).toLocaleString('pt-PT');
+                        sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
+                            body: `Venda de ${val} MT via ${payload.payload?.method || 'Gateway'}`,
                             icon: '/logo.png'
                         });
-                    } else if (payload.eventType === 'UPDATE' && payload.new.type === 'payment' && payload.old?.status !== 'Concluído' && payload.new.status === 'Concluído') {
-                        const val = Number(payload.new.amount).toLocaleString('pt-PT');
-                        // const method = payload.new.method || 'VELORA Pay'; // removed unused variable
-                        sendLocalNotification('Você recebeu um novo pedido! 🎉', {
-                            body: `Venda aprovada de ${val} MT ${payload.new.method}`,
-                            icon: '/logo.png'
-                        });
-                    }
-                    
-                    // Trigger System Notification for Withdrawals
-                    if (payload.eventType === 'UPDATE' && payload.new.type === 'withdrawal' && payload.old.status !== 'Concluído' && payload.new.status === 'Concluído') {
-                        const val = Number(payload.new.amount).toLocaleString('pt-PT');
-                        sendLocalNotification('💸 Levantamento Aprovado!', {
-                            body: `O seu saque de ${val} MZN foi concluído com sucesso.`,
-                            icon: '/logo.png'
-                        });
-                    }
-                })
-                .on('broadcast', { event: 'test_push' }, (payload: any) => {
-                    console.log('Realtime broadcast test_push:', payload);
-                    const val = Number(payload.payload.amount).toLocaleString('pt-PT');
-                    sendLocalNotification('Você recebeu um novo pedido! 🎉 (TESTE)', {
-                        body: `Venda aprovada de ${val} MT ${payload.payload.method}`,
-                        icon: '/logo.png'
+                    })
+                    .subscribe((status: string) => {
+                        if (status === 'SUBSCRIBED') {
+                            setRealtimeConnected(true);
+                            console.log('✅ Realtime VELORA conectado');
+                        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                            setRealtimeConnected(false);
+                            console.warn('⚠️ Realtime desconectado, reconectando em 5s...');
+                            setTimeout(() => {
+                                if (channel) { try { supabase.removeChannel(channel); } catch {} }
+                                subscribeRealtime();
+                            }, 5000);
+                        }
                     });
-                })
-                .subscribe();
-        } catch (e: unknown) {
-            console.warn('Falha ao assinar canal em tempo real do Supabase:', e);
-        }
-
-        // Auto-aprovação removida: A aprovação deve vir exclusivamente do Webhook da E2Payments (api/webhook.ts)
-        // para garantir a segurança e o disparo correto das integrações (LowTrack, Pushcut, etc).
-
-        // Recarrega transações ao voltar ao aplicativo (ex: no celular quando sai de segundo plano)
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                console.log('App returned to foreground, refreshing transactions...');
-                fetchTransactions();
+            } catch (e: unknown) {
+                setRealtimeConnected(false);
+                console.warn('Falha ao assinar canal em tempo real do Supabase:', e);
             }
+        };
+        subscribeRealtime();
+
+        // Recarrega ao voltar ao app (ex: mobile background)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') fetchTransactions();
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             transactionListeners.delete(listener);
+            realtimeListeners.delete(rtListener);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            if (channel) {
-                try {
-                    supabase.removeChannel(channel);
-                } catch {}
-            }
+            if (channel) { try { supabase.removeChannel(channel); } catch {} }
+            setRealtimeConnected(false);
         };
     }, []);
 
@@ -760,6 +772,6 @@ export const useTransactionsStore = () => {
         }
     };
 
-    return { transactions, addTransaction, updateTransactionStatus };
+    return { transactions, addTransaction, updateTransactionStatus, isRealtimeConnected };
 };
 

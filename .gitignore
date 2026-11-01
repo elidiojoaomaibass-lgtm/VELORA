@@ -13,6 +13,8 @@ dist-ssr
 *.local
 
 InfroPaycredentials/
+_archive/
+scripts/
 
 # Editor directories and files
 .vscode/*

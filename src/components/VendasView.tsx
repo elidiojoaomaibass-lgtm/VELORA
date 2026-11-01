@@ -17,7 +17,7 @@ interface VendasViewProps {
 
 export const VendasView = ({ user: _user }: VendasViewProps) => {
     // Store
-    const { transactions } = useTransactionsStore();
+    const { transactions, isRealtimeConnected } = useTransactionsStore();
     const { products } = useProductsStore();
 
     // State
@@ -199,8 +199,14 @@ export const VendasView = ({ user: _user }: VendasViewProps) => {
             {/* Header */}
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 xl:gap-16">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-1 md:space-y-3 mt-3 md:mt-2">
-                    <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none pl-[3.5rem] md:pl-0 flex items-center min-h-[2rem] md:min-h-0">
+                    <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none pl-[3.5rem] md:pl-0 flex items-center gap-2.5 min-h-[2rem] md:min-h-0">
                         <span>Protocolo de <span className="text-gradient">Vendas</span> 🧾</span>
+                        {isRealtimeConnected && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-widest text-emerald-500 animate-pulse">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                AO VIVO
+                            </span>
+                        )}
                     </h2>
                     <p className="text-[10px] md:text-xs text-slate-400 dark:text-brand-400 font-medium tracking-tight pl-[3.5rem] md:pl-0 leading-snug">
                         Registro imutável e auditoria em tempo real de todas as transações da rede.
