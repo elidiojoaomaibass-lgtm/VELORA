@@ -1,14 +1,16 @@
 // Enable CORS for any origin (adjust as needed)
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import fetch from 'node-fetch';
+// push_v1 and lowtrack are imported dynamically inside handlers to avoid tsconfig boundary issues
+
 export const config = {
   api: {
     bodyParser: true,
     externalResolver: true,
   },
 };
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import fetch from 'node-fetch';
-// push_v1 and lowtrack are imported dynamically inside handlers to avoid tsconfig boundary issues
+
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
