@@ -104,7 +104,33 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 9. HABILITAR SEGURANÇA RLS
+-- 9. TABELA DE CONFIGURAÇÕES DE USUÁRIO / INTEGRAÇÕES
+CREATE TABLE IF NOT EXISTS public.user_settings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_email TEXT NOT NULL UNIQUE,
+    phone_number TEXT,
+    webhook_url TEXT,
+    webhook_events TEXT,
+    lowtrack_token TEXT,
+    facebook_pixel_id TEXT,
+    tiktok_pixel_id TEXT,
+    utmify_token TEXT,
+    google_ads_id TEXT,
+    whatsapp_token TEXT,
+    klaviyo_token TEXT,
+    b2c_client_id TEXT,
+    b2c_client_secret TEXT,
+    b2c_wallet_id TEXT,
+    b2c_environment TEXT DEFAULT 'production',
+    full_name TEXT,
+    nickname TEXT,
+    document_id TEXT,
+    settings JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 10. HABILITAR SEGURANÇA RLS
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
@@ -112,8 +138,9 @@ ALTER TABLE public.affiliate_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marketing_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 
--- 10. LIMPAR POLÍTICAS ANTERIORES
+-- 11. LIMPAR POLÍTICAS ANTERIORES
 DROP POLICY IF EXISTS "Public access for products" ON public.products;
 DROP POLICY IF EXISTS "Public access for product_images" ON public.product_images;
 DROP POLICY IF EXISTS "Public access for transactions" ON public.transactions;
@@ -121,8 +148,9 @@ DROP POLICY IF EXISTS "Public access for affiliate_requests" ON public.affiliate
 DROP POLICY IF EXISTS "Public access for coupons" ON public.coupons;
 DROP POLICY IF EXISTS "Public access for marketing_campaigns" ON public.marketing_campaigns;
 DROP POLICY IF EXISTS "Public access for push_subscriptions" ON public.push_subscriptions;
+DROP POLICY IF EXISTS "Public access for user_settings" ON public.user_settings;
 
--- 11. CRIAR POLÍTICAS DE ACESSO
+-- 12. CRIAR POLÍTICAS DE ACESSO
 CREATE POLICY "Public access for products" ON public.products FOR ALL TO public USING (true) WITH CHECK (true);
 CREATE POLICY "Public access for product_images" ON public.product_images FOR ALL TO public USING (true) WITH CHECK (true);
 CREATE POLICY "Public access for transactions" ON public.transactions FOR ALL TO public USING (true) WITH CHECK (true);
@@ -130,3 +158,4 @@ CREATE POLICY "Public access for affiliate_requests" ON public.affiliate_request
 CREATE POLICY "Public access for coupons" ON public.coupons FOR ALL TO public USING (true) WITH CHECK (true);
 CREATE POLICY "Public access for marketing_campaigns" ON public.marketing_campaigns FOR ALL TO public USING (true) WITH CHECK (true);
 CREATE POLICY "Public access for push_subscriptions" ON public.push_subscriptions FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for user_settings" ON public.user_settings FOR ALL TO public USING (true) WITH CHECK (true);

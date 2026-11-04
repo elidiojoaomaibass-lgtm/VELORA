@@ -10,6 +10,7 @@ import {
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
+import { getUserSettings, saveUserSettings } from '../lib/userSettings';
 
 // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Local Storage Keys Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 const LS_CLIENT_ID = 'b2c_client_id';
@@ -131,30 +132,37 @@ export const B2CConfigView = () => {
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Load from storage on mount Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     useEffect(() => {
-        setClientId(localStorage.getItem(LS_CLIENT_ID) || (import.meta.env.VITE_KWIKPAY_CLIENT_ID ?? ''));
-        setClientSecret(localStorage.getItem(LS_CLIENT_SECRET) || (import.meta.env.VITE_KWIKPAY_CLIENT_SECRET ?? ''));
-        setWalletId(localStorage.getItem(LS_WALLET_ID) || (import.meta.env.VITE_KWIKPAY_WALLET_ID ?? ''));
-        setEnvironment((localStorage.getItem(LS_ENV) as 'production' | 'sandbox') || 'production');
-        const stored = localStorage.getItem(LS_PHONE);
-        if (stored) setTestPhone(stored);
-
         (async () => {
-            try {
-                const { data: sess } = await supabase.auth.getSession();
-                const user = sess?.session?.user;
-                if (!user) return;
-                const { data } = await supabase
-                    .from('user_settings')
-                    .select('phone_number')
-                    .eq('user_email', user.email)
-                    .maybeSingle();
-                const ph = data?.phone_number || user.user_metadata?.phone_number;
-                if (ph) {
-                    const clean = String(ph).replace(/\D/g, '').slice(-9);
+            const settings = await getUserSettings();
+            if (settings) {
+                if (settings.b2c_client_id) setClientId(settings.b2c_client_id);
+                else setClientId(localStorage.getItem(LS_CLIENT_ID) || (import.meta.env.VITE_KWIKPAY_CLIENT_ID ?? ''));
+
+                if (settings.b2c_client_secret) setClientSecret(settings.b2c_client_secret);
+                else setClientSecret(localStorage.getItem(LS_CLIENT_SECRET) || (import.meta.env.VITE_KWIKPAY_CLIENT_SECRET ?? ''));
+
+                if (settings.b2c_wallet_id) setWalletId(settings.b2c_wallet_id);
+                else setWalletId(localStorage.getItem(LS_WALLET_ID) || (import.meta.env.VITE_KWIKPAY_WALLET_ID ?? ''));
+
+                if (settings.b2c_environment) setEnvironment(settings.b2c_environment);
+                else setEnvironment((localStorage.getItem(LS_ENV) as 'production' | 'sandbox') || 'production');
+
+                if (settings.phone_number) {
+                    const clean = String(settings.phone_number).replace(/\D/g, '').slice(-9);
                     setPhoneNumber(clean);
-                    if (!stored) setTestPhone(clean);
+                    setTestPhone(clean);
+                } else {
+                    const stored = localStorage.getItem(LS_PHONE);
+                    if (stored) setTestPhone(stored);
                 }
-            } catch { /* silent */ }
+            } else {
+                setClientId(localStorage.getItem(LS_CLIENT_ID) || (import.meta.env.VITE_KWIKPAY_CLIENT_ID ?? ''));
+                setClientSecret(localStorage.getItem(LS_CLIENT_SECRET) || (import.meta.env.VITE_KWIKPAY_CLIENT_SECRET ?? ''));
+                setWalletId(localStorage.getItem(LS_WALLET_ID) || (import.meta.env.VITE_KWIKPAY_WALLET_ID ?? ''));
+                setEnvironment((localStorage.getItem(LS_ENV) as 'production' | 'sandbox') || 'production');
+                const stored = localStorage.getItem(LS_PHONE);
+                if (stored) setTestPhone(stored);
+            }
         })();
     }, []);
 
@@ -200,13 +208,18 @@ export const B2CConfigView = () => {
             return;
         }
         setCredsSaving(true);
-        await new Promise(r => setTimeout(r, 700));
-        localStorage.setItem(LS_CLIENT_ID, clientId.trim());
-        localStorage.setItem(LS_CLIENT_SECRET, clientSecret.trim());
-        localStorage.setItem(LS_WALLET_ID, walletId.trim());
-        localStorage.setItem(LS_ENV, environment);
+        const ok = await saveUserSettings({
+            b2c_client_id: clientId.trim(),
+            b2c_client_secret: clientSecret.trim(),
+            b2c_wallet_id: walletId.trim(),
+            b2c_environment: environment
+        });
         setCredsSaving(false);
-        toast.success('Ã¢Å“â€¦ Credenciais B2C guardadas com sucesso!');
+        if (ok) {
+            toast.success('✅ Credenciais B2C guardadas na conta e sincronizadas com sucesso!');
+        } else {
+            toast.error('Erro ao guardar credenciais na conta.');
+        }
     };
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Save Phone Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -215,19 +228,18 @@ export const B2CConfigView = () => {
         if (clean.length !== 9) { toast.error('Número M-Pesa inválido (9 dígitos).'); return; }
         setPhoneSaving(true);
         try {
+            await saveUserSettings({ phone_number: clean });
             const { data: sess } = await supabase.auth.getSession();
             const user = sess?.session?.user;
             if (user?.email) {
-                await supabase.from('user_settings')
-                    .upsert({ user_email: user.email, phone_number: clean }, { onConflict: 'user_email' });
                 await supabase.auth.updateUser({ data: { phone_number: clean } });
             }
             localStorage.setItem(LS_PHONE, clean);
             setPhoneVerified(true);
             setTestPhone(clean);
-            toast.success(`Ã°Å¸â€œÂ± Número +258 ${clean} configurado como destino B2C!`);
+            toast.success(`📱 Número +258 ${clean} guardado na conta para destino B2C!`);
         } catch {
-            toast.error('Erro ao guardar número no Supabase.');
+            toast.error('Erro ao guardar número na conta.');
         } finally {
             setPhoneSaving(false);
         }

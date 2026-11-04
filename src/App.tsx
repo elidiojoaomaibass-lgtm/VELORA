@@ -6,8 +6,10 @@ import { Dashboard } from "./components/Dashboard";
 import { Views } from "./components/Views";
 import { LoginView } from "./components/LoginView";
 import { supabase } from "./lib/supabase";
+import { getUserSettings } from "./lib/userSettings";
 import { clearLocalDataIfNotAdmin } from "./lib/clearLocalData";
 import { getFcmToken, onFcmMessage } from "./lib/firebase";
+import { initTransactionsRealtime } from "./lib/store";
 import type { Session } from "@supabase/supabase-js";
 import { Toaster } from 'sonner';
 import { Menu } from './components/MenuIcon';
@@ -187,7 +189,6 @@ function App() {
           const parsed = JSON.parse(fake);
           // eslint-disable-next-line react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any
           setSession(parsed as any);
-        // eslint-disable-next-line no-empty
         } catch {}
       }
     }
@@ -212,7 +213,6 @@ function App() {
     const next = !isDarkMode;
     setIsDarkMode(next);
     // Persiste no localStorage para sobreviver ao refresh
-    // eslint-disable-next-line no-empty
     try { localStorage.setItem('velora_dark_mode', String(next)); } catch {}
   };
 
@@ -226,7 +226,6 @@ function App() {
           const sb = supabase;
           const { data: sess } = await sb.auth.getSession();
           email = sess?.session?.user?.email;
-        // eslint-disable-next-line no-empty
         } catch {}
       }
       if (!email) return;
@@ -244,7 +243,7 @@ function App() {
             const sb = supabase;
             await sb
               .from('push_subscriptions')
-              .upsert({ user_email: email, token }, { onConflict: 'user_email' });
+              .upsert({ user_email: email.trim().toLowerCase(), token }, { onConflict: 'token' });
             console.log('✅ FCM token renovado no Supabase para:', email);
           }
         } catch (e) {
@@ -254,7 +253,10 @@ function App() {
     };
 
     // Corre ao login
-    if (session) setupPush(session.user?.email);
+    if (session) {
+      initTransactionsRealtime();
+      setupPush(session.user?.email);
+    }
 
     // Corre sempre que o utilizador volta à aba (ecrã desbloqueado, app voltou ao 1º plano)
     const onVisible = () => {
@@ -286,81 +288,98 @@ function App() {
     return () => { if (unsubscribe) unsubscribe(); };
   }, [session]);
 
-  // Meta Ads Pixel Injection
+  // Sincronização de configurações e injeção de Pixels (Meta Ads e TikTok) da conta
   useEffect(() => {
-    const pixelId = localStorage.getItem('velora_facebook_pixel_id');
-    if (!pixelId) return;
+    const applyPixels = (fbId?: string, ttId?: string) => {
+      const fb = fbId || localStorage.getItem('velora_facebook_pixel_id');
+      if (fb) {
+        const w = window as any;
+        if (!w.fbq) {
+          w.fbq = function (...args: unknown[]) {
+            if (w.fbq.callMethod) {
+              w.fbq.callMethod(...args);
+            } else {
+              w.fbq.queue.push(args);
+            }
+          };
+          if (!w._fbq) w._fbq = w.fbq;
+          w.fbq.push = w.fbq;
+          w.fbq.loaded = true;
+          w.fbq.version = '2.0';
+          w.fbq.queue = [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    if (w.fbq) return;
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+          const firstScript = document.getElementsByTagName('script')[0];
+          firstScript?.parentNode?.insertBefore(script, firstScript);
+        }
+        try {
+          w.fbq('init', fb);
+          w.fbq('track', 'PageView');
+        } catch {}
+      }
 
-    w.fbq = function (...args: unknown[]) {
-      if (w.fbq.callMethod) {
-        w.fbq.callMethod(...args);
-      } else {
-        w.fbq.queue.push(args);
+      const tt = ttId || localStorage.getItem('velora_tiktok_pixel_id');
+      if (tt) {
+        const w = window as any;
+        if (!w.ttq) {
+          w.ttq = w.ttq || [];
+          w.ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"];
+          w.ttq.setAndDefer = function (t: any, e: string) {
+            t[e] = function (...innerArgs: unknown[]) {
+              t.push([e].concat(innerArgs as string[]));
+            };
+          };
+          for (let i = 0; i < w.ttq.methods.length; i++) w.ttq.setAndDefer(w.ttq, w.ttq.methods[i]);
+          w.ttq.instance = function (t: string) {
+            const arr = w.ttq._i[t] || [];
+            for (let n = 0; n < w.ttq.methods.length; n++) w.ttq.setAndDefer(arr, w.ttq.methods[n]);
+            return arr;
+          };
+          w.ttq.load = function (e: string, n: unknown) {
+            const src = "https://analytics.tiktok.com/i18n/pixel/events.js";
+            w.ttq._i = w.ttq._i || {};
+            w.ttq._i[e] = [];
+            w.ttq._i[e]._u = src;
+            w.ttq._t = w.ttq._t || {};
+            w.ttq._t[e] = +new Date();
+            w.ttq._o = w.ttq._o || {};
+            w.ttq._o[e] = n || {};
+            const o = document.createElement("script");
+            o.type = "text/javascript";
+            o.async = true;
+            o.src = src + "?sdkid=" + e + "&lib=ttq";
+            const a = document.getElementsByTagName("script")[0];
+            a.parentNode?.insertBefore(o, a);
+          };
+        }
+        try {
+          w.ttq.load(tt);
+          w.ttq.page();
+        } catch {}
       }
     };
-    if (!w._fbq) w._fbq = w.fbq;
-    w.fbq.push = w.fbq;
-    w.fbq.loaded = true;
-    w.fbq.version = '2.0';
-    w.fbq.queue = [];
 
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = 'https://connect.facebook.net/en_US/fbevents.js';
-    const firstScript = document.getElementsByTagName('script')[0];
-    firstScript?.parentNode?.insertBefore(script, firstScript);
+    // 1. Aplica imediatamente se já houver em cache
+    applyPixels();
 
-    w.fbq('init', pixelId);
-    w.fbq('track', 'PageView');
-  }, []);
+    // 2. Busca da conta no Supabase para garantir sincronização no dispositivo
+    getUserSettings().then(s => {
+      if (s) {
+        applyPixels(s.facebook_pixel_id, s.tiktok_pixel_id);
+      }
+    });
 
-  // TikTok Pixel Injection
-  useEffect(() => {
-    const pixelId = localStorage.getItem('velora_tiktok_pixel_id');
-    if (!pixelId) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    if (w.ttq) return;
-
-    w.ttq = w.ttq || [];
-    w.ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    w.ttq.setAndDefer = function (t: any, e: string) {
-      t[e] = function (...innerArgs: unknown[]) {
-        t.push([e].concat(innerArgs as string[]));
-      };
-    };
-    for (let i = 0; i < w.ttq.methods.length; i++) w.ttq.setAndDefer(w.ttq, w.ttq.methods[i]);
-    w.ttq.instance = function (t: string) {
-      const arr = w.ttq._i[t] || [];
-      for (let n = 0; n < w.ttq.methods.length; n++) w.ttq.setAndDefer(arr, w.ttq.methods[n]);
-      return arr;
-    };
-    w.ttq.load = function (e: string, n: unknown) {
-      const src = "https://analytics.tiktok.com/i18n/pixel/events.js";
-      w.ttq._i = w.ttq._i || {};
-      w.ttq._i[e] = [];
-      w.ttq._i[e]._u = src;
-      w.ttq._t = w.ttq._t || {};
-      w.ttq._t[e] = +new Date();
-      w.ttq._o = w.ttq._o || {};
-      w.ttq._o[e] = n || {};
-      const o = document.createElement("script");
-      o.type = "text/javascript";
-      o.async = true;
-      o.src = src + "?sdkid=" + e + "&lib=ttq";
-      const a = document.getElementsByTagName("script")[0];
-      a.parentNode?.insertBefore(o, a);
+    // 3. Ouve alterações de configurações em tempo real
+    const handleSettingsUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      applyPixels(detail.facebook_pixel_id, detail.tiktok_pixel_id);
     };
 
-    w.ttq.load(pixelId);
-    w.ttq.page();
-  }, []);
+    window.addEventListener('user-settings-updated', handleSettingsUpdated);
+    return () => window.removeEventListener('user-settings-updated', handleSettingsUpdated);
+  }, [session]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

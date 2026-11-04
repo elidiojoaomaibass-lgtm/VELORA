@@ -163,7 +163,7 @@ const getInitialProducts = async (): Promise<Product[]> => {
             return localProducts;
         }
 
-        if (data && Array.isArray(data) && data.length > 0) {
+        if (data && Array.isArray(data)) {
             let remoteProducts = data.map(mapSupabaseProduct);
 
             // Fetch associated images from product_images table if present
@@ -183,22 +183,9 @@ const getInitialProducts = async (): Promise<Product[]> => {
                 console.warn('Could not fetch product_images:', e);
             }
 
-            // Merge remote products with local products (avoiding duplicates by id)
-            const remoteIds = new Set(remoteProducts.map(p => p.id));
-            const merged = [...remoteProducts];
-            localProducts.forEach(lp => {
-                if (!remoteIds.has(lp.id)) {
-                    merged.push(lp);
-                    // Sync unpushed local products to Supabase
-                    try {
-                        const payload = formatProductForSupabase(lp, lp.user_email || userEmail);
-                        supabase.from('products').upsert(payload, { onConflict: 'id' }).then(() => {});
-                    } catch {}
-                }
-            });
-
-            merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-            return merged;
+            // O banco de dados Supabase é a fonte da verdade para a conta
+            remoteProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+            return remoteProducts;
         }
 
         return localProducts;
@@ -221,7 +208,7 @@ export const useProductsStore = () => {
 
         const fetchProducts = async () => {
             const data = await getInitialProducts();
-            if (data && data.length > 0) {
+            if (data && Array.isArray(data)) {
                 globalProducts = data;
                 localStorage.setItem(OFFLINE_PRODUCTS_KEY, JSON.stringify(globalProducts));
                 localStorage.setItem('velora_products', JSON.stringify(globalProducts));
@@ -344,6 +331,7 @@ export const useProductsStore = () => {
             const { error } = await supabase.from('products').upsert(dbPayload, { onConflict: 'id' });
             if (error) {
                 console.warn('Erro ao atualizar produto no Supabase:', error);
+                toast.error('Aviso: Falha ao sincronizar produto no banco de dados', { description: error.message });
             }
 
             if (completeProduct.image) {
@@ -547,6 +535,97 @@ const setRealtimeConnected = (v: boolean) => {
     realtimeListeners.forEach(l => l(v));
 };
 
+let globalChannel: any = null;
+let globalFetchTransactions: (() => Promise<void>) | null = null;
+
+const ensureRealtimeSubscribed = (fetchFn: () => Promise<void>) => {
+    globalFetchTransactions = fetchFn;
+    if (globalChannel) return;
+
+    try {
+        globalChannel = supabase
+            .channel('velora-transactions-rt')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (payload: any) => {
+                if (globalFetchTransactions) globalFetchTransactions();
+
+                const tx = payload.new || {};
+                const val = tx.amount ? Number(tx.amount).toLocaleString('pt-PT') : '?';
+                const mth = tx.method || 'Gateway';
+                const customer = tx.customerName || tx.customername || 'Cliente';
+
+                if (tx.type === 'payment') {
+                    if (tx.status === 'Pendente' && payload.eventType === 'INSERT') {
+                        sendLocalNotification('⏳ Nova venda iniciada!', {
+                            body: `${customer} · ${val} MT via ${mth} — aguardando confirmação`,
+                            icon: '/logo.png'
+                        });
+                    } else if (tx.status === 'Concluído') {
+                        sendLocalNotification('🎉 Venda aprovada!', {
+                            body: `${customer} · ${val} MT via ${mth}`,
+                            icon: '/logo.png'
+                        });
+                    } else if (tx.status === 'Falhou') {
+                        sendLocalNotification('❌ Pagamento falhado', {
+                            body: `${customer} · ${val} MT via ${mth} — falhou`,
+                            icon: '/logo.png'
+                        });
+                    }
+                }
+
+                if (tx.type === 'withdrawal' && tx.status === 'Concluído') {
+                    sendLocalNotification('💸 Levantamento Aprovado!', {
+                        body: `Saque de ${val} MZN concluído com sucesso.`,
+                        icon: '/logo.png'
+                    });
+                }
+            })
+            .on('broadcast', { event: 'test_push' }, (payload: any) => {
+                const val = Number(payload.payload?.amount || 0).toLocaleString('pt-PT');
+                sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
+                    body: `Venda de ${val} MT via ${payload.payload?.method || 'Gateway'}`,
+                    icon: '/logo.png'
+                });
+            })
+            .subscribe((status: string) => {
+                if (status === 'SUBSCRIBED') {
+                    setRealtimeConnected(true);
+                    console.log('✅ Realtime VELORA conectado');
+                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                    setRealtimeConnected(false);
+                    console.warn('⚠️ Realtime desconectado, reconectando em 5s...');
+                    setTimeout(() => {
+                        if (globalChannel) {
+                            try { supabase.removeChannel(globalChannel); } catch {}
+                            globalChannel = null;
+                        }
+                        if (globalFetchTransactions) ensureRealtimeSubscribed(globalFetchTransactions);
+                    }, 5000);
+                }
+            });
+    } catch (e: unknown) {
+        setRealtimeConnected(false);
+        console.warn('Falha ao assinar canal em tempo real do Supabase:', e);
+    }
+};
+
+export const initTransactionsRealtime = () => {
+    ensureRealtimeSubscribed(async () => {
+        try {
+            const { data } = await supabase.from('transactions').select('*').order('createdat', { ascending: false });
+            if (data && data.length > 0) {
+                const mapped = data.map((tx: any) => ({
+                    ...tx,
+                    amount: Number(tx.amount),
+                    createdAt: tx.createdAt || tx.created_at || tx.createdat
+                }));
+                globalTransactions = mapped;
+                localStorage.setItem(TRANSACTIONS_STORAGE_KEY, JSON.stringify(globalTransactions));
+                transactionListeners.forEach(l => l(globalTransactions));
+            }
+        } catch {}
+    });
+};
+
 export const useTransactionsStore = () => {
     const [transactions, setTransactions] = useState<Transaction[]>(globalTransactions);
     const [isRealtimeConnected, setIsRealtimeConnected] = useState(globalRealtimeConnected);
@@ -610,76 +689,8 @@ export const useTransactionsStore = () => {
 
         fetchTransactions();
 
-        // ─── Canal Realtime com notificações para TODOS os estados ───
-        let channel: any = null;
-        const subscribeRealtime = () => {
-            try {
-                channel = supabase
-                    .channel('velora-transactions-rt')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (payload: any) => {
-                        // Re-fetch para garantir dados frescos
-                        fetchTransactions();
-
-                        const tx = payload.new || {};
-                        const val = tx.amount ? Number(tx.amount).toLocaleString('pt-PT') : '?';
-                        const mth = tx.method || 'Gateway';
-                        const customer = tx.customerName || tx.customername || 'Cliente';
-
-                        if (tx.type === 'payment') {
-                            if (tx.status === 'Pendente' && payload.eventType === 'INSERT') {
-                                // Nova venda iniciada — aparece imediatamente
-                                sendLocalNotification('⏳ Nova venda iniciada!', {
-                                    body: `${customer} · ${val} MT via ${mth} — aguardando confirmação`,
-                                    icon: '/logo.png'
-                                });
-                            } else if (tx.status === 'Concluído') {
-                                // Venda aprovada
-                                sendLocalNotification('🎉 Venda aprovada!', {
-                                    body: `${customer} · ${val} MT via ${mth}`,
-                                    icon: '/logo.png'
-                                });
-                            } else if (tx.status === 'Falhou') {
-                                // Venda falhada
-                                sendLocalNotification('❌ Pagamento falhado', {
-                                    body: `${customer} · ${val} MT via ${mth} — falhou`,
-                                    icon: '/logo.png'
-                                });
-                            }
-                        }
-
-                        if (tx.type === 'withdrawal' && tx.status === 'Concluído') {
-                            sendLocalNotification('💸 Levantamento Aprovado!', {
-                                body: `Saque de ${val} MZN concluído com sucesso.`,
-                                icon: '/logo.png'
-                            });
-                        }
-                    })
-                    .on('broadcast', { event: 'test_push' }, (payload: any) => {
-                        const val = Number(payload.payload?.amount || 0).toLocaleString('pt-PT');
-                        sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
-                            body: `Venda de ${val} MT via ${payload.payload?.method || 'Gateway'}`,
-                            icon: '/logo.png'
-                        });
-                    })
-                    .subscribe((status: string) => {
-                        if (status === 'SUBSCRIBED') {
-                            setRealtimeConnected(true);
-                            console.log('✅ Realtime VELORA conectado');
-                        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                            setRealtimeConnected(false);
-                            console.warn('⚠️ Realtime desconectado, reconectando em 5s...');
-                            setTimeout(() => {
-                                if (channel) { try { supabase.removeChannel(channel); } catch {} }
-                                subscribeRealtime();
-                            }, 5000);
-                        }
-                    });
-            } catch (e: unknown) {
-                setRealtimeConnected(false);
-                console.warn('Falha ao assinar canal em tempo real do Supabase:', e);
-            }
-        };
-        subscribeRealtime();
+        // ─── Conectar ao canal Realtime singleton compartilhado ───
+        ensureRealtimeSubscribed(fetchTransactions);
 
         // Recarrega ao voltar ao app (ex: mobile background)
         const handleVisibilityChange = () => {
@@ -691,8 +702,6 @@ export const useTransactionsStore = () => {
             transactionListeners.delete(listener);
             realtimeListeners.delete(rtListener);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            if (channel) { try { supabase.removeChannel(channel); } catch {} }
-            setRealtimeConnected(false);
         };
     }, []);
 

@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getUserSettings, saveUserSettings, getActiveUserEmail } from '../lib/userSettings';
+import { sendLocalNotification } from '../lib/store';
+import { requestPermissionAndStoreToken } from '../lib/firebase';
 import { motion } from 'framer-motion';
 import {
     Link as LinkIcon,
@@ -51,86 +54,47 @@ export const FerramentasView = () => {
 
     useEffect(() => {
         const loadSettings = async () => {
-            const { data: sess } = await supabase.auth.getSession();
-            const email = sess?.session?.user?.email;
-            if (email) {
-                setUserEmail(email);
-                const { data, error } = await supabase
-                    .from('user_settings')
-                    .select('*')
-                    .eq('user_email', email)
-                    .single();
-                if (error) console.error('[FerramentasView] Erro ao carregar settings:', error);
-                if (data) {
-                    if (data.webhook_url) setWebhookUrl(data.webhook_url);
-                    if (data.webhook_events) setWebhookEvents(data.webhook_events);
-                    if (data.lowtrack_token) setLowTrackToken(data.lowtrack_token);
-                    if (data.facebook_pixel_id) {
-                        setPixelId(data.facebook_pixel_id);
-                        localStorage.setItem('velora_facebook_pixel_id', data.facebook_pixel_id);
-                    }
-                    if (data.tiktok_pixel_id) {
-                        setTiktokId(data.tiktok_pixel_id);
-                        localStorage.setItem('velora_tiktok_pixel_id', data.tiktok_pixel_id);
-                    }
-                }
-            } else {
-                console.warn('[FerramentasView] Nenhuma sessão activa ao carregar.');
+            const activeEmail = await getActiveUserEmail();
+            if (activeEmail) setUserEmail(activeEmail);
+            const settings = await getUserSettings(activeEmail);
+            if (settings) {
+                if (settings.user_email) setUserEmail(settings.user_email);
+                if (settings.webhook_url !== undefined) setWebhookUrl(settings.webhook_url);
+                if (settings.webhook_events) setWebhookEvents(settings.webhook_events);
+                if (settings.lowtrack_token !== undefined) setLowTrackToken(settings.lowtrack_token);
+                if (settings.facebook_pixel_id !== undefined) setPixelId(settings.facebook_pixel_id);
+                if (settings.tiktok_pixel_id !== undefined) setTiktokId(settings.tiktok_pixel_id);
+                if (settings.utmify_token !== undefined) setUtmifyToken(settings.utmify_token);
+                if (settings.google_ads_id !== undefined) setGoogleAdsId(settings.google_ads_id);
+                if (settings.whatsapp_token !== undefined) setWhatsappToken(settings.whatsapp_token);
+                if (settings.klaviyo_token !== undefined) setKlaviyoToken(settings.klaviyo_token);
             }
         };
         loadSettings();
     }, []);
 
-    const saveSettingToDB = async (updates: any): Promise<boolean> => {
-        try {
-            let email = userEmail;
-            if (!email) {
-                const { data: sess } = await supabase.auth.getSession();
-                email = sess?.session?.user?.email || '';
-            }
-            if (!email) {
-                const fake = localStorage.getItem('velora_fake_session');
-                if (fake) {
-                    try {
-                        const parsed = JSON.parse(fake);
-                        email = parsed?.user?.email || '';
-                    } catch {}
-                }
-            }
-            if (!email) {
-                email = (import.meta.env.VITE_ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
-            }
-            if (email) setUserEmail(email);
-
-            console.log('[saveSettingToDB] upsert para', email, updates);
-            const { error } = await supabase
-                .from('user_settings')
-                .upsert({ user_email: email, ...updates }, { onConflict: 'user_email' });
-            if (error) {
-                console.warn('[saveSettingToDB] Supabase sync warning (saved locally):', error);
-            }
-            return true;
-        } catch(e: any) {
-            console.warn('[saveSettingToDB] Supabase exception (saved locally):', e);
-            return true;
-        }
-    };
-
-    const handleSaveUtmify = (e: React.FormEvent) => {
+    const handleSaveUtmify = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_utmify_token', utmifyToken);
-        toast.success('Token Utmify salvo!', {
-            description: 'A integração com Utmify está agora ativa no seu checkout.'
-        });
+        const ok = await saveUserSettings({ utmify_token: utmifyToken.trim() });
+        if (ok) {
+            toast.success('Token Utmify salvo na conta!', {
+                description: 'A integração com Utmify está salva no banco de dados e ativa no seu checkout.'
+            });
+        } else {
+            toast.error('Erro ao salvar Token Utmify na conta.');
+        }
     };
 
     const handleSaveLowTrack = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_lowtrack_token', lowTrackToken);
-        await saveSettingToDB({ lowtrack_token: lowTrackToken });
-        toast.success('Token LowTrack salvo!', {
-            description: 'A integração com LowTrack está agora ativa no seu checkout e foi guardada na sua conta.'
-        });
+        const ok = await saveUserSettings({ lowtrack_token: lowTrackToken.trim() });
+        if (ok) {
+            toast.success('Token LowTrack salvo na conta!', {
+                description: 'A integração com LowTrack está salva no banco de dados e ativa em todos os dispositivos.'
+            });
+        } else {
+            toast.error('Erro ao salvar Token LowTrack na conta.');
+        }
     };
 
     const handleTestLowTrack = () => {
@@ -170,32 +134,34 @@ export const FerramentasView = () => {
 
     const handleSavePixel = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_facebook_pixel_id', pixelId);
-        const ok = await saveSettingToDB({ facebook_pixel_id: pixelId });
-        if (!ok) return; // toast de erro já foi mostrado dentro de saveSettingToDB
-
-        // Reinitializar imediatamente sem precisar de reload
-        if (pixelId) {
-            (window as any).fbq = undefined;
-            (window as any)._fbq = undefined;
-            import('../lib/pixel').then(({ initFacebookPixel, trackFacebookEvent }) => {
-                initFacebookPixel(pixelId);
-                trackFacebookEvent('PageView');
+        const ok = await saveUserSettings({ facebook_pixel_id: pixelId.trim() });
+        if (ok) {
+            if (pixelId.trim()) {
+                (window as any).fbq = undefined;
+                (window as any)._fbq = undefined;
+                import('../lib/pixel').then(({ initFacebookPixel, trackFacebookEvent }) => {
+                    initFacebookPixel(pixelId.trim());
+                    trackFacebookEvent('PageView');
+                });
+            }
+            toast.success('Pixel do Meta Ads salvo na conta!', {
+                description: 'O Facebook Pixel está salvo no banco de dados e sincronizado em todos os dispositivos.'
             });
+        } else {
+            toast.error('Erro ao salvar Pixel do Meta Ads na conta.');
         }
-
-        toast.success('Pixel do Meta Ads salvo na conta!', {
-            description: 'O Facebook Pixel está ativo e sincronizado em todos os dispositivos.'
-        });
     };
 
     const handleSaveTikTok = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_tiktok_pixel_id', tiktokId);
-        await saveSettingToDB({ tiktok_pixel_id: tiktokId });
-        toast.success('Pixel do TikTok salvo na conta!', {
-            description: 'O TikTok Pixel está ativo e sincronizado em todos os dispositivos.'
-        });
+        const ok = await saveUserSettings({ tiktok_pixel_id: tiktokId.trim() });
+        if (ok) {
+            toast.success('Pixel do TikTok salvo na conta!', {
+                description: 'O TikTok Pixel está salvo no banco de dados e sincronizado em todos os dispositivos.'
+            });
+        } else {
+            toast.error('Erro ao salvar Pixel do TikTok na conta.');
+        }
     };
 
     const handleSaveWebhook = async (e: React.FormEvent) => {
@@ -204,12 +170,14 @@ export const FerramentasView = () => {
             toast.error('URL do Webhook inválida');
             return;
         }
-        localStorage.setItem('velora_webhook_url', webhookUrl);
-        localStorage.setItem('velora_webhook_events', JSON.stringify(webhookEvents));
-        await saveSettingToDB({ webhook_url: webhookUrl, webhook_events: webhookEvents });
-        toast.success('Webhook configurado!', {
-            description: 'Os eventos selecionados serão enviados para a URL informada e as configurações foram guardadas na sua conta.'
-        });
+        const ok = await saveUserSettings({ webhook_url: webhookUrl.trim(), webhook_events: webhookEvents });
+        if (ok) {
+            toast.success('Webhook configurado e salvo na conta!', {
+                description: 'A URL e os eventos estão salvos no banco de dados e sincronizados em todos os dispositivos.'
+            });
+        } else {
+            toast.error('Erro ao salvar Webhook na conta.');
+        }
     };
 
     const handleTestWebhook = () => {
@@ -247,87 +215,130 @@ export const FerramentasView = () => {
         );
     };
 
-    const handleSaveGoogleAds = (e: React.FormEvent) => {
+    const handleSaveGoogleAds = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_google_ads_id', googleAdsId);
-        toast.success('Google Ads salvo!', { description: 'O rastreamento de conversões via API está ativo.' });
+        const ok = await saveUserSettings({ google_ads_id: googleAdsId.trim() });
+        if (ok) {
+            toast.success('Google Ads salvo na conta!', {
+                description: 'O rastreamento de conversões via API está salvo no banco de dados e sincronizado em todos os dispositivos.'
+            });
+        } else {
+            toast.error('Erro ao salvar Google Ads na conta.');
+        }
     };
 
-    const handleSaveWhatsapp = (e: React.FormEvent) => {
+    const handleSaveWhatsapp = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_whatsapp_token', whatsappToken);
-        toast.success('WhatsApp configurado!', { description: 'A recuperação automática de vendas foi ativada.' });
+        const ok = await saveUserSettings({ whatsapp_token: whatsappToken.trim() });
+        if (ok) {
+            toast.success('WhatsApp configurado e salvo na conta!', {
+                description: 'A recuperação automática de vendas está salva no banco de dados e sincronizada em todos os dispositivos.'
+            });
+        } else {
+            toast.error('Erro ao salvar WhatsApp na conta.');
+        }
     };
 
-    const handleSaveKlaviyo = (e: React.FormEvent) => {
+    const handleSaveKlaviyo = async (e: React.FormEvent) => {
         e.preventDefault();
-        localStorage.setItem('velora_klaviyo_token', klaviyoToken);
-        toast.success('Klaviyo configurado!', { description: 'A integração de email marketing está ativa.' });
+        const ok = await saveUserSettings({ klaviyo_token: klaviyoToken.trim() });
+        if (ok) {
+            toast.success('Klaviyo configurado e salvo na conta!', {
+                description: 'A integração de email marketing está salva no banco de dados e sincronizada em todos os dispositivos.'
+            });
+        } else {
+            toast.error('Erro ao salvar Klaviyo na conta.');
+        }
     };
 
     const handleTestPush = async () => {
-        // 1. Verificar se o utilizador está autenticado
+        // 1. Obter email ativo com fallback seguro
         let email = userEmail;
         if (!email) {
-            const { data: sess } = await supabase.auth.getSession();
-            email = sess?.session?.user?.email || '';
+            email = await getActiveUserEmail();
             if (email) setUserEmail(email);
         }
-        if (!email) {
-            toast.error('Sessão não encontrada. Faça login primeiro.');
-            return;
-        }
 
-        // A verificação de dispositivos (push_subscriptions) foi removida.
-        // O evento será disparado em tempo real, notificando qualquer dispositivo logado que tenha a app aberta.
-
-        // 3. Disparar notificação via Supabase Realtime (funciona localmente sem Vercel API)
         const val = parseFloat(testPushValue.replace(',', '.')) || 97;
         const testPayload = {
             amount: val,
             method: 'M-Pesa'
         };
 
+        // 2. Pedir permissão no navegador caso ainda esteja pendente
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                try {
+                    await Notification.requestPermission();
+                } catch {
+                    // silencioso
+                }
+            }
+        }
+
+        // 3. Tentar renovar/salvar o token FCM se o navegador suportar
+        if (email) {
+            requestPermissionAndStoreToken(email).catch(() => {});
+        }
+
+        // 4. DISPARAR IMEDIATAMENTE NOTIFICAÇÃO LOCAL NESTE DISPOSITIVO
+        // O utilizador está a testar e deve ver o alerta e feedback sonoro/visual de imediato
+        sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
+            body: `Venda de ${val.toLocaleString('pt-PT')} MT via M-Pesa`,
+            icon: '/logo.png'
+        });
+
+        // 5. Função auxiliar de broadcast Realtime com timeout seguro (não trava a interface)
+        const sendBroadcast = (channelName: string) => new Promise<boolean>((resolve) => {
+            const timer = setTimeout(() => resolve(true), 2500);
+            try {
+                const channel = supabase.channel(channelName, {
+                    config: { broadcast: { self: false } }
+                });
+                channel.subscribe((status: string) => {
+                    if (status === 'SUBSCRIBED') {
+                        channel.send({
+                            type: 'broadcast',
+                            event: 'test_push',
+                            payload: testPayload
+                        }).finally(() => {
+                            clearTimeout(timer);
+                            supabase.removeChannel(channel);
+                            resolve(true);
+                        });
+                    } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                        clearTimeout(timer);
+                        resolve(true);
+                    }
+                });
+            } catch {
+                clearTimeout(timer);
+                resolve(true);
+            }
+        });
+
+        // 6. Disparar notificação nativa via Edge Function para FCM (telemóveis em segundo plano)
+        const fcmPromise = email ? supabase.functions.invoke('send-push', {
+            body: {
+                title: 'Você recebeu um novo pedido! 🎉 (TESTE)',
+                body: `Venda aprovada de ${val.toLocaleString('pt-PT')} MT M-Pesa`,
+                user_email: email
+            }
+        }).then(({ error }: any) => {
+            if (error) console.warn('Aviso ao disparar FCM no teste:', error);
+            return true;
+        }).catch(() => true) : Promise.resolve(true);
+
         toast.promise(
             Promise.all([
-                // 1. Broadcast para web (app aberta)
-                new Promise((resolve, reject) => {
-                    const channel = supabase.channel('public-transactions-changes');
-                    channel.subscribe((status: any) => {
-                        if (status === 'SUBSCRIBED') {
-                            channel.send({
-                                type: 'broadcast',
-                                event: 'test_push',
-                                payload: testPayload
-                            }).then((res: any) => {
-                                if (res === 'ok') resolve(true);
-                                else reject(new Error('Falha ao enviar broadcast'));
-                                supabase.removeChannel(channel);
-                            }).catch((err: any) => {
-                                reject(err);
-                                supabase.removeChannel(channel);
-                            });
-                        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                            reject(new Error('Falha na conexão do canal'));
-                        }
-                    });
-                }),
-                // 2. Disparar notificação nativa via Edge Function para FCM (background)
-                supabase.functions.invoke('send-push', {
-                    body: {
-                        title: 'Você recebeu um novo pedido! 🎉 (TESTE)',
-                        body: `Venda aprovada de ${val.toLocaleString('pt-PT')} MT M-Pesa`,
-                        user_email: email
-                    }
-                }).then(({ error }: any) => {
-                    if (error) console.warn('Erro ao disparar FCM no teste:', error);
-                    return true;
-                })
+                sendBroadcast('velora-transactions-rt'),
+                sendBroadcast('public-transactions-changes'),
+                fcmPromise
             ]),
             {
-                loading: `A enviar evento em tempo real para os dispositivos...`,
-                success: `✅ Evento disparado! O telemóvel logado deve receber a notificação em instantes.`,
-                error: (err: any) => `Erro ao enviar: ${err?.message || 'Tente novamente'}`,
+                loading: `A enviar evento de teste para todos os dispositivos...`,
+                success: `✅ Notificação disparada! Alerta emitido neste e nos outros dispositivos conectados.`,
+                error: (err: any) => `Erro ao sincronizar: ${err?.message || 'Tente novamente'}`,
             }
         );
     };

@@ -40,28 +40,35 @@ export const onFcmMessage = (callback: (payload: any) => void) => {
 };
 
 import { supabase } from './supabase';
+import { getActiveUserEmail } from './userSettings';
 
 /**
  * Persiste o token FCM no Supabase na tabela push_subscriptions.
  * Chame após getFcmToken quando o usuário estiver autenticado.
  */
-export const storeFcmToken = async (uid: string, token: string) => {
+export const storeFcmToken = async (uidOrEmail: string, token: string) => {
   try {
+    const cleanEmail = (uidOrEmail || '').trim().toLowerCase();
+    if (!cleanEmail) return;
     const { error } = await supabase
       .from('push_subscriptions')
-      .upsert({ user_email: uid, token }, { onConflict: 'user_email' });
+      .upsert({ user_email: cleanEmail, token }, { onConflict: 'token' });
     if (error) throw error;
-    console.log('Token FCM armazenado no Supabase para email', uid);
+    console.log('Token FCM armazenado no Supabase para email', cleanEmail);
   } catch (err) {
     console.error('Erro ao armazenar token FCM', err);
   }
 };
 
 /**
- * Solicita permissão de notificação ao navegador, obtém o token FCM e o armazena no Firestore.
- * Se um ID de usuário for fornecido, o token será associado a esse usuário. Caso contrário, será armazenado localmente.
+ * Solicita permissão de notificação ao navegador, obtém o token FCM e o armazena no Supabase.
+ * Se um email de usuário for fornecido, o token será associado a esse usuário.
  */
-export const requestPermissionAndStoreToken = async (uid?: string): Promise<void> => {
+export const requestPermissionAndStoreToken = async (email?: string): Promise<void> => {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return;
+  }
+
   // Solicita permissão ao navegador
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
@@ -76,11 +83,11 @@ export const requestPermissionAndStoreToken = async (uid?: string): Promise<void
     return;
   }
 
-  // Armazena o token se UID estiver disponível
-  if (uid) {
-    await storeFcmToken(uid, token);
+  // Armazena o token para o usuário ativo
+  const targetEmail = email || (await getActiveUserEmail());
+  if (targetEmail) {
+    await storeFcmToken(targetEmail, token);
   } else {
-    // Alternativa: armazena em localStorage para associação posterior
     localStorage.setItem('fcm_token', token);
   }
 };

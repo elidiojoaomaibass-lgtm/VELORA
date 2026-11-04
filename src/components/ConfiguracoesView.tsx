@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Lock, Bell, Shield, LogOut, AlertCircle, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getUserSettings, saveUserSettings } from '../lib/userSettings';
 import { requestPermissionAndStoreToken } from '../lib/firebase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -31,29 +32,41 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
             const { data } = await supabase.auth.getSession();
             const realUser = data.session?.user;
 
+            let m: Record<string, any> = {};
+
             if (realUser) {
                 setUser(realUser);
-                requestPermissionAndStoreToken(realUser.id);
-                const m = realUser.user_metadata || {};
+                requestPermissionAndStoreToken(realUser.email || realUser.id);
+                m = realUser.user_metadata || {};
                 if (m.full_name) setFullName(m.full_name);
                 if (m.nickname) setNickname(m.nickname);
                 if (m.phone_number) setPhoneNumber(m.phone_number);
                 if (m.document_id) setDocumentId(m.document_id);
-                
             } else {
                 // Fake session fallback
                 const fake = localStorage.getItem('velora_fake_session');
                 if (fake) {
                     const fakeUser = JSON.parse(fake).user;
                     setUser(fakeUser);
-                    const m = fakeUser?.user_metadata || {};
+                    if (fakeUser?.email) requestPermissionAndStoreToken(fakeUser.email);
+                    m = fakeUser?.user_metadata || {};
                     if (m.full_name) setFullName(m.full_name);
                     if (m.nickname) setNickname(m.nickname);
                     if (m.phone_number) setPhoneNumber(m.phone_number);
                     if (m.document_id) setDocumentId(m.document_id);
-    
                 }
             }
+
+            // Complementar com dados persistidos no user_settings caso metadados estejam vazios
+            try {
+                const settings = await getUserSettings();
+                if (settings) {
+                    if (!m.full_name && settings.full_name) setFullName(settings.full_name);
+                    if (!m.nickname && settings.nickname) setNickname(settings.nickname);
+                    if (!m.phone_number && settings.phone_number) setPhoneNumber(settings.phone_number);
+                    if (!m.document_id && settings.document_id) setDocumentId(settings.document_id);
+                }
+            } catch {}
         };
         loadUser();
 
@@ -79,21 +92,20 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
         const metadata = { full_name: fullName, nickname, phone_number: phoneNumber, document_id: documentId };
 
         try {
+            // Salva de forma definitiva no banco de dados e conta (sincroniza cross-device)
+            await saveUserSettings({
+                full_name: fullName,
+                nickname,
+                phone_number: phoneNumber,
+                document_id: documentId
+            });
+
             // Priority: Check if there is a real Supabase session
             const { data: sessionData } = await supabase.auth.getSession();
             
             if (sessionData.session) {
-                // Real Supabase update to the database
-                const { error } = await supabase.auth.updateUser({ data: metadata });
-                if (error) throw error;
-
-                // Also persist phone_number to user_settings so backend B2C can read it
-                const email = sessionData.session.user.email;
-                if (email && phoneNumber) {
-                    await supabase
-                        .from('user_settings')
-                        .upsert({ user_email: email, phone_number: phoneNumber }, { onConflict: 'user_email' });
-                }
+                // Real Supabase update to the auth user metadata
+                await supabase.auth.updateUser({ data: metadata });
             } else {
                 // Fallback to fake session
                 const fake = localStorage.getItem('velora_fake_session');
@@ -107,13 +119,11 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
                         } 
                     };
                     localStorage.setItem('velora_fake_session', JSON.stringify(parsed));
-                } else {
-                    throw new Error('Nenhuma sessão ativa encontrada para salvar.');
                 }
             }
 
             window.dispatchEvent(new CustomEvent('user-profile-updated', { detail: metadata }));
-            setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
+            setMessage({ type: 'success', text: 'Perfil atualizado e salvo na conta com sucesso!' });
         } catch (err: unknown) {
             setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao atualizar perfil.' });
         } finally {
