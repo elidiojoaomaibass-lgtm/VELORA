@@ -146,7 +146,7 @@ export const getUserSettings = async (email?: string): Promise<UserSettings | nu
 
       const settings: UserSettings = {
         user_email: data.user_email || targetEmail,
-        webhook_url: data.webhook_url || '',
+        webhook_url: data.webhook_url || extra.webhook_url || '',
         webhook_events: events,
         lowtrack_token: data.lowtrack_token || '',
         facebook_pixel_id: data.facebook_pixel_id || '',
@@ -225,7 +225,13 @@ export const saveUserSettings = async (
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: targetEmail, updates }),
+      body: JSON.stringify({
+        email: targetEmail,
+        user_email: targetEmail,
+        updates,
+        settings: updates,
+        ...updates,
+      }),
     });
 
     if (res.ok) {
@@ -283,6 +289,7 @@ export const saveUserSettings = async (
       'full_name',
       'nickname',
       'document_id',
+      'webhook_url',
     ];
 
     for (const key of extraKeys) {

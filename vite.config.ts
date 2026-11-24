@@ -102,8 +102,8 @@ function apiSettingsDevPlugin(env: Record<string, string>) {
               body = JSON.parse(Buffer.concat(chunks).toString());
             } catch {}
 
-            const targetEmail = (body.email || email).trim().toLowerCase();
-            const updates = body.settings || {};
+            const targetEmail = (body.email || body.user_email || email).trim().toLowerCase();
+            const updates = body.updates || body.settings || body || {};
 
             if (!targetEmail) {
               res.statusCode = 400;
@@ -140,7 +140,7 @@ function apiSettingsDevPlugin(env: Record<string, string>) {
                 webhookEvents = { ...webhookEvents, ...updates.webhook_events };
               }
 
-              const extraFields = ['utmify_token', 'google_ads_id', 'whatsapp_token', 'klaviyo_token', 'b2c_client_id', 'b2c_client_secret', 'b2c_wallet_id', 'b2c_environment', 'phone_number', 'full_name', 'nickname', 'document_id'];
+              const extraFields = ['utmify_token', 'google_ads_id', 'whatsapp_token', 'klaviyo_token', 'b2c_client_id', 'b2c_client_secret', 'b2c_wallet_id', 'b2c_environment', 'phone_number', 'full_name', 'nickname', 'document_id', 'webhook_url'];
               for (const key of extraFields) {
                 if (updates[key] !== undefined) {
                   extra[key] = updates[key];
@@ -153,10 +153,20 @@ function apiSettingsDevPlugin(env: Record<string, string>) {
               };
 
               if (updates.webhook_url !== undefined) rowToSave.webhook_url = updates.webhook_url;
+              else if (existing?.webhook_url !== undefined) rowToSave.webhook_url = existing.webhook_url;
+              else if (extra.webhook_url !== undefined) rowToSave.webhook_url = extra.webhook_url;
+
               if (updates.lowtrack_token !== undefined) rowToSave.lowtrack_token = updates.lowtrack_token;
+              else if (existing?.lowtrack_token !== undefined) rowToSave.lowtrack_token = existing.lowtrack_token;
+
               if (updates.facebook_pixel_id !== undefined) rowToSave.facebook_pixel_id = updates.facebook_pixel_id;
+              else if (existing?.facebook_pixel_id !== undefined) rowToSave.facebook_pixel_id = existing.facebook_pixel_id;
+
               if (updates.tiktok_pixel_id !== undefined) rowToSave.tiktok_pixel_id = updates.tiktok_pixel_id;
+              else if (existing?.tiktok_pixel_id !== undefined) rowToSave.tiktok_pixel_id = existing.tiktok_pixel_id;
+
               if (updates.phone_number !== undefined) rowToSave.phone_number = updates.phone_number;
+              else if (existing?.phone_number !== undefined) rowToSave.phone_number = existing.phone_number;
 
               const { error: saveErr } = await supabase
                 .from('user_settings')

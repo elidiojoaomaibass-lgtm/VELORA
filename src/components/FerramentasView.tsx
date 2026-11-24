@@ -59,7 +59,12 @@ export const FerramentasView = () => {
             const settings = await getUserSettings(activeEmail);
             if (settings) {
                 if (settings.user_email) setUserEmail(settings.user_email);
-                if (settings.webhook_url !== undefined) setWebhookUrl(settings.webhook_url);
+                if (settings.webhook_url !== undefined && settings.webhook_url !== '') {
+                    setWebhookUrl(settings.webhook_url);
+                } else {
+                    const local = localStorage.getItem('velora_webhook_url');
+                    if (local) setWebhookUrl(local);
+                }
                 if (settings.webhook_events) setWebhookEvents(settings.webhook_events);
                 if (settings.lowtrack_token !== undefined) setLowTrackToken(settings.lowtrack_token);
                 if (settings.facebook_pixel_id !== undefined) setPixelId(settings.facebook_pixel_id);
@@ -166,11 +171,12 @@ export const FerramentasView = () => {
 
     const handleSaveWebhook = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (webhookUrl && !webhookUrl.startsWith('http')) {
-            toast.error('URL do Webhook inválida');
+        const cleanUrl = webhookUrl.trim();
+        if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+            toast.error('URL do Webhook inválida. Deve começar com http:// ou https://');
             return;
         }
-        const ok = await saveUserSettings({ webhook_url: webhookUrl.trim(), webhook_events: webhookEvents });
+        const ok = await saveUserSettings({ webhook_url: cleanUrl, webhook_events: webhookEvents });
         if (ok) {
             toast.success('Webhook configurado e salvo na conta!', {
                 description: 'A URL e os eventos estão salvos no banco de dados e sincronizados em todos os dispositivos.'

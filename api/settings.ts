@@ -117,7 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const unifiedSettings = {
         user_email: data.user_email || emailParam,
-        webhook_url: data.webhook_url || '',
+        webhook_url: data.webhook_url || extra.webhook_url || '',
         webhook_events: events,
         lowtrack_token: data.lowtrack_token || '',
         facebook_pixel_id: data.facebook_pixel_id || '',
@@ -150,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
       const email = String(body.email || body.user_email || '').trim().toLowerCase();
-      const updates = body.updates || body || {};
+      const updates = body.updates || body.settings || body || {};
 
       if (!email) {
         return res.status(400).json({ error: 'O email da conta é obrigatório para guardar alterações.' });
@@ -188,6 +188,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'full_name',
         'nickname',
         'document_id',
+        'webhook_url',
       ];
 
       for (const key of extraKeys) {
