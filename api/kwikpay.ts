@@ -22,13 +22,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     const { action, method, walletId, amount, phone, reference } = body;
 
-    const clientId = process.env.PAYMENT_CLIENT_ID || process.env.VITE_PAYMENT_CLIENT_ID || '';
-    const clientSecret = process.env.PAYMENT_CLIENT_SECRET || process.env.VITE_PAYMENT_CLIENT_SECRET || '';
+    const clientId =
+      body.clientId ||
+      body.client_id ||
+      process.env.PAYMENT_CLIENT_ID ||
+      process.env.VITE_PAYMENT_CLIENT_ID ||
+      'a317dab6-69ec-4d2f-8014-cb3ab617fd43';
+
+    const clientSecret =
+      body.clientSecret ||
+      body.client_secret ||
+      process.env.PAYMENT_CLIENT_SECRET ||
+      process.env.VITE_PAYMENT_CLIENT_SECRET ||
+      'fVfwZkE81OhqOfneGvBJUd9CrSYtelgwZnPUGGKs';
+
     const defaultWalletId = process.env.PAYMENT_WALLET_ID || process.env.VITE_PAYMENT_WALLET_ID || '807267';
     const walletMpesa = process.env.PAYMENT_WALLET_MPESA || process.env.VITE_PAYMENT_WALLET_MPESA || '807267';
     const walletEmola = process.env.PAYMENT_WALLET_EMOLA || process.env.VITE_PAYMENT_WALLET_EMOLA || '257096';
     const oauthUrl = process.env.PAYMENT_OAUTH_URL || 'https://mpesaemolatech.com/oauth/token';
-    const c2bBaseUrl = process.env.PAYMENT_C2B_BASE_URL || 'https://mpesaemolatech.com/v1/c2b';
+    const c2bBaseUrl = process.env.PAYMENT_C2B_BASE_URL || process.env.PAYMENT_API_BASE_URL || 'https://mpesaemolatech.com/v1/c2b';
 
     if (!clientId || !clientSecret || !oauthUrl) {
       return res.status(500).json({ error: 'Credenciais do gateway de pagamento não configuradas.' });
@@ -75,9 +87,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Reference must not contain spaces and be <= 20 characters
     const cleanRef = String(reference || `ORD${Date.now()}`).replace(/\s+/g, '_').slice(0, 20);
 
-    const c2bUrl = c2bBaseUrl
-      ? `${c2bBaseUrl.replace(/\/$/, '')}/${endpoint}/${targetWallet}`
-      : `https://mpesaemolatech.com/v1/c2b/${endpoint}/${targetWallet}`;
+    const baseUrlFormatted = c2bBaseUrl.includes('/v1/c2b')
+      ? c2bBaseUrl.replace(/\/$/, '')
+      : (c2bBaseUrl.includes('/v1') ? `${c2bBaseUrl.replace(/\/$/, '')}/c2b` : 'https://mpesaemolatech.com/v1/c2b');
+    const c2bUrl = `${baseUrlFormatted}/${endpoint}/${targetWallet}`;
 
     const paymentRes = await fetch(c2bUrl, {
       method: 'POST',

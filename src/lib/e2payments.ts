@@ -31,8 +31,8 @@ export class E2Payments {
 
     constructor(clientId?: string, clientSecret?: string) {
         // Credentials come from env vars
-        this.clientId     = clientId     || import.meta.env.VITE_PAYMENT_CLIENT_ID || '';
-        this.clientSecret = clientSecret || import.meta.env.VITE_PAYMENT_CLIENT_SECRET || '';
+        this.clientId     = clientId     || import.meta.env.VITE_PAYMENT_CLIENT_ID     || 'a317dab6-69ec-4d2f-8014-cb3ab617fd43';
+        this.clientSecret = clientSecret || import.meta.env.VITE_PAYMENT_CLIENT_SECRET || 'fVfwZkE81OhqOfneGvBJUd9CrSYtelgwZnPUGGKs';
 
         // In browser, use the same-origin proxy (/api/payment-proxy) to bypass CORS blocks
         this.baseUrl = typeof window !== 'undefined' ? '/api/payment-proxy' : (import.meta.env.VITE_PAYMENT_BASE_URL || '');
@@ -83,12 +83,11 @@ export class E2Payments {
         // Always use the robust serverless endpoint instead of the edge proxy in production.
         // The serverless function has maxDuration 60s configured (only works in Pro).
         // For local development (Vite), we must use the Vite proxy.
-        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        
-        let response;
-        if (isLocalhost) {
-            console.log('Using /api/payment-proxy for local development...');
-            // First ensure we have a token
+        let response: Response | null = null;
+
+        // 1. Tentar primeiro via /api/payment-proxy (Edge rewrite direto na Vercel e Vite, sem timeout de 10s de serverless)
+        try {
+            console.log(`[E2Payments] A iniciar pagamento ${method} para ${cleanPhone} via /api/payment-proxy...`);
             const token = await this.authenticate();
             response = await fetch(`/api/payment-proxy/v1/c2b/${method}-payment/${walletId}`, {
                 method: 'POST',
@@ -104,19 +103,38 @@ export class E2Payments {
                     reference: cleanRef
                 })
             });
-        } else {
-            console.log('Using /api/kwikpay serverless endpoint for payment...');
-            response = await fetch('/api/kwikpay', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    method,
-                    walletId,
-                    amount: Number(amount),
-                    phone: cleanPhone,
-                    reference: cleanRef
-                })
-            });
+        } catch (proxyErr) {
+            console.warn('[E2Payments] Falha ao conectar via /api/payment-proxy, tentando /api/kwikpay:', proxyErr);
+        }
+
+        // 2. Se /api/payment-proxy falhou na rede ou não respondeu, usar fallback serverless /api/kwikpay
+        if (!response || !response.ok) {
+            console.log('[E2Payments] A tentar endpoint serverless /api/kwikpay...');
+            try {
+                const kwikpayRes = await fetch('/api/kwikpay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        method,
+                        walletId,
+                        amount: Number(amount),
+                        phone: cleanPhone,
+                        reference: cleanRef,
+                        clientId: this.clientId,
+                        clientSecret: this.clientSecret,
+                    })
+                });
+                // Se o kwikpay responder com ok ou com dados válidos, usamos esta resposta
+                if (kwikpayRes.ok || !response) {
+                    response = kwikpayRes;
+                }
+            } catch (serverlessErr) {
+                console.error('[E2Payments] Erro no fallback /api/kwikpay:', serverlessErr);
+            }
+        }
+
+        if (!response) {
+            throw new Error('Não foi possível conectar ao gateway de pagamentos. Verifique a sua ligação à internet.');
         }
 
         // Para debug: vamos capturar o status e o texto bruto
@@ -132,12 +150,11 @@ export class E2Payments {
         }
 
         if (!response.ok || (data && data.success === false)) {
-            // WORKAROUND VERCEL PLANO GRÁTIS (10s timeout):
-            const isVercelTimeout = response.status === 504 || response.status === 502 || response.status === 500;
-            const isGatewayErrorString = rawText.toLowerCase().includes('system internal error') || rawText.toLowerCase().includes('gateway timeout');
+            // Timeout real da gateway enquanto aguarda PIN no telemóvel:
+            const isGatewayTimeout = response.status === 504 || rawText.toLowerCase().includes('gateway timeout') || rawText.toLowerCase().includes('request timeout');
 
-            if (isVercelTimeout || isGatewayErrorString) {
-                console.log('Timeout/Erro Interno do Gateway atingido. Assumindo pagamento como pendente (aguardando webhook)...');
+            if (isGatewayTimeout) {
+                console.log('Timeout da Gateway atingido. O pedido foi enviado; aguardando PIN no telemóvel...');
                 return { success: true, pending: true, message: 'A aguardar confirmação no telemóvel...' };
             }
             throw new Error(formatGatewayError(data || { error: rawText }));
