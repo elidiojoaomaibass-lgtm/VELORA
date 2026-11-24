@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { sendPushNotificationV1, getUserTokens } from './_push.js';
 
 /**
  * Lightweight endpoint to dispatch push notifications after a successful payment.
@@ -20,9 +21,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const { merchant_user_email, amount, method, product_name, reference } = body;
+    const { merchant_user_email, amount, method, product_name, reference, title, body: customBody } = body;
 
-    if (!merchant_user_email) {
+    const email = merchant_user_email || body.user_email || body.email;
+    if (!email) {
       return res.status(400).json({ error: 'merchant_user_email é obrigatório.' });
     }
 
@@ -30,22 +32,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 1. Firebase Cloud Messaging (FCM) Push Notifications
     try {
-      const { sendPushNotificationV1, getUserTokens } = await import('../src/lib/push_v1.js');
-      const tokens = await getUserTokens(merchant_user_email);
+      const tokens = await getUserTokens(email);
 
       if (tokens && tokens.length > 0) {
         const val = Number(amount || 0).toLocaleString('pt-PT');
         const methodStr = method || 'M-Pesa';
+        const notifTitle = title || 'VELORA — Nova Venda! 🎉';
+        const notifBody = customBody || `Venda aprovada: ${val} MT via ${methodStr}`;
 
+        let successCount = 0;
         for (const token of tokens) {
-          await sendPushNotificationV1(token, {
-            title: 'VELORA — Nova Venda! 🎉',
-            body: `Venda aprovada: ${val} MT via ${methodStr}`,
+          const ok = await sendPushNotificationV1(token, {
+            title: notifTitle,
+            body: notifBody,
           });
+          if (ok) successCount++;
         }
-        results.push(`FCM: ${tokens.length} dispositivo(s) notificado(s).`);
+        results.push(`FCM: ${successCount}/${tokens.length} dispositivo(s) notificado(s).`);
       } else {
-        results.push('FCM: Nenhum token encontrado.');
+        results.push('FCM: Nenhum token de push encontrado para esta conta.');
       }
     } catch (err: any) {
       console.error('Erro FCM:', err.message || err);

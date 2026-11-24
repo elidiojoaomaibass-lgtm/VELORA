@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { sendPushNotificationV1, getUserTokens } from './_push.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
@@ -87,18 +88,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
                 const { data: userSettings } = await dbClient
                 .from('user_settings')
-                .select('webhook_url, webhook_events, lowtrack_token')
+                .select('*')
                 .eq('user_email', finalMerchantEmail)
-                .single();
+                .maybeSingle();
 
                 if (userSettings) {
                     if (userSettings.webhook_url) supabaseWebhookUrl = userSettings.webhook_url;
-                    if (userSettings.webhook_events)
-                        supabaseWebhookEvents = typeof userSettings.webhook_events === 'string'
-                            ? userSettings.webhook_events
-                            : JSON.stringify(userSettings.webhook_events);
                     if (userSettings.lowtrack_token) supabaseLowtrackToken = userSettings.lowtrack_token;
-                    console.log(`Configurações carregadas do Supabase para: ${finalMerchantEmail}`);
+                    if (userSettings.webhook_events) {
+                        const parsed = typeof userSettings.webhook_events === 'string'
+                            ? JSON.parse(userSettings.webhook_events)
+                            : userSettings.webhook_events;
+                        if (parsed && typeof parsed === 'object') {
+                            if (!supabaseWebhookUrl && parsed._extra?.webhook_url) {
+                                supabaseWebhookUrl = parsed._extra.webhook_url;
+                            }
+                        }
+                        supabaseWebhookEvents = JSON.stringify(parsed || {});
+                    }
+                    console.log(`Configurações carregadas do Supabase para: ${finalMerchantEmail} (webhook=${supabaseWebhookUrl ? 'SIM' : 'NÃO'})`);
                 }
             } catch (e) {
                 console.warn('Erro ao carregar user_settings:', e);
@@ -258,8 +266,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (finalMerchantEmail) {
             notifications.push((async () => {
                 try {
-                // Dynamically import to not break edge functions if missing dependencies
-                const { sendPushNotificationV1, getUserTokens } = await import('../src/lib/push_v1.js');
                 const tokens = await getUserTokens(finalMerchantEmail);
                 if (tokens && tokens.length > 0) {
                     const val = amountNum.toLocaleString('pt-PT');
@@ -270,6 +276,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         });
                     }
                     console.log(`FCM Push Notifications disparadas para ${tokens.length} dispositivos.`);
+                } else {
+                    console.log(`FCM: Nenhum token de push encontrado para ${finalMerchantEmail}.`);
                 }
                 } catch (err: any) {
                     console.error('Erro ao enviar FCM Push Notification:', err.message || err);

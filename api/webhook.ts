@@ -2,7 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
-// push_v1 and lowtrack are imported dynamically inside handlers to avoid tsconfig boundary issues
+import { sendPushNotificationV1, getUserTokens } from './_push.js';
 
 export const config = {
   api: {
@@ -143,19 +143,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // ── Determinar o email do merchant para enviar push ──
-      // Tenta primeiro o customerEmail guardado na transação,
-      // depois procura o produto pelo product_id para obter o user_email do merchant.
-      let merchantEmail = payload.user_id || payload.userId || updatedTx?.customerEmail || '';
+      // ── Determinar o email do merchant para enviar push e webhook ──
+      let merchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || updatedTx?.customerEmail || '';
 
-      if (!merchantEmail && updatedTx?.description) {
-        const desc: string = updatedTx.description;
+      const effectiveProductId = payload.product_id || payload.productId;
+      if (!merchantEmail && (effectiveProductId || updatedTx?.description)) {
+        const desc: string = updatedTx?.description || '';
         const pidMarker = '||PRODUCT_ID||';
         const pidIdx = desc.indexOf(pidMarker);
-        const productId = pidIdx !== -1 ? desc.substring(pidIdx + pidMarker.length).split('||')[0].trim() : null;
+        const productId = effectiveProductId || (pidIdx !== -1 ? desc.substring(pidIdx + pidMarker.length).split('||')[0].trim() : null);
         if (productId) {
           try {
-            const { data: prodData } = await supabase.from('products').select('user_email').eq('id', productId).single();
+            const { data: prodData } = await supabase.from('products').select('user_email').eq('id', productId).maybeSingle();
             if (prodData?.user_email) merchantEmail = prodData.user_email;
           } catch {}
         }
@@ -164,34 +163,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const userId = merchantEmail;
       const notifications: Promise<void>[] = [];
 
-      // Resolve merchant M-Pesa phone from user_settings (populated when merchant saves profile)
+      // Carregar configurações de user_settings da conta do merchant (Webhook URL, LowTrack Token, eventos)
+      let notifMeta = parseNotifMeta(updatedTx?.description || null);
+      let merchantWebhookUrl = notifMeta?.webhook_url || defaultMerchantWebhookUrl;
+      let merchantLowtrackToken = notifMeta?.lowtrack_token || globalLowtrakApiKey;
+      let merchantWebhookEvents: Record<string, boolean> = { sale_approved: true };
       let merchantMpesaPhone = '';
+
       if (merchantEmail && supabase) {
         try {
-          const { data: phoneSetting } = await supabase
+          const { data: uSettings } = await supabase
             .from('user_settings')
-            .select('phone_number')
+            .select('*')
             .eq('user_email', merchantEmail)
-            .single();
-          if (phoneSetting?.phone_number) {
-            let cleaned = String(phoneSetting.phone_number).replace(/\D/g, '');
-            if (cleaned.startsWith('258') && cleaned.length > 9) cleaned = cleaned.substring(3);
-            merchantMpesaPhone = cleaned.slice(-9);
-            console.log(`📞 Telefone do merchant: ${merchantMpesaPhone}`);
-          } else {
-            console.warn(`⚠️ Nenhum número de telemóvel em user_settings para: ${merchantEmail}`);
+            .maybeSingle();
+
+          if (uSettings) {
+            if (uSettings.webhook_url) merchantWebhookUrl = uSettings.webhook_url;
+            if (uSettings.lowtrack_token) merchantLowtrackToken = uSettings.lowtrack_token;
+            if (uSettings.phone_number) {
+              let cleaned = String(uSettings.phone_number).replace(/\D/g, '');
+              if (cleaned.startsWith('258') && cleaned.length > 9) cleaned = cleaned.substring(3);
+              merchantMpesaPhone = cleaned.slice(-9);
+            }
+            if (uSettings.webhook_events) {
+              const parsed = typeof uSettings.webhook_events === 'string' ? JSON.parse(uSettings.webhook_events) : uSettings.webhook_events;
+              if (parsed && typeof parsed === 'object') {
+                if (!merchantWebhookUrl && parsed._extra?.webhook_url) {
+                  merchantWebhookUrl = parsed._extra.webhook_url;
+                }
+                merchantWebhookEvents = { ...merchantWebhookEvents, ...parsed };
+              }
+            }
+            console.log(`[webhook] Configurações de user_settings carregadas para ${merchantEmail}: webhook=${merchantWebhookUrl ? 'SIM' : 'NÃO'}`);
           }
         } catch (phoneErr: any) {
-          console.warn('Erro ao obter phone_number do merchant:', phoneErr.message);
+          console.warn('[webhook] Erro ao carregar user_settings:', phoneErr.message);
         }
       }
-
 
       // 1. Push notification (FCM)
       if (userId) {
         notifications.push((async () => {
           try {
-            const { sendPushNotificationV1, getUserTokens } = await import('../src/lib/push_v1.js');
             const tokens = await getUserTokens(userId);
             const val = amount ? Number(amount).toLocaleString('pt-PT') : '';
             for (const token of tokens) {
@@ -218,18 +232,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // 3. Merchant Webhook & LowTrack
-      const notifMeta = parseNotifMeta(updatedTx?.description || null);
-      const merchantWebhookUrl = notifMeta?.webhook_url || defaultMerchantWebhookUrl;
-      const merchantLowtrackToken = notifMeta?.lowtrack_token || globalLowtrakApiKey;
 
       if (merchantWebhookUrl && merchantWebhookUrl.startsWith('http')) {
         notifications.push((async () => {
           try {
-            let webhookEvents: Record<string, boolean> = { sale_approved: true };
-            if (notifMeta?.webhook_events) { try { webhookEvents = JSON.parse(notifMeta.webhook_events); } catch {} }
             const eventName = isSuccess ? 'sale_approved' : 'sale_failed';
 
-            if ((isSuccess && webhookEvents.sale_approved !== false) || !isSuccess) {
+            if ((isSuccess && merchantWebhookEvents.sale_approved !== false) || !isSuccess) {
               await fetch(merchantWebhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -241,6 +250,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   status: finalStatus
                 })
               });
+              console.log(`[webhook] Webhook enviado para ${merchantWebhookUrl}`);
             }
           } catch (whErr) { console.error('Erro Merchant Webhook', whErr); }
         })());
