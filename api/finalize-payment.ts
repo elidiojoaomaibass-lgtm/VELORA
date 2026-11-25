@@ -304,10 +304,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (finalWebhookUrl) {
           notifications.push((async () => {
             try {
-              const r = await fetch(finalWebhookUrl, {
+              const val = amountNum.toLocaleString('pt-PT');
+              const notifTitle = '🎉 Venda aprovada!';
+              const notifText = `Venda de ${val} MT via ${providerStr}`;
+
+              // Se for URL secreto do Pushcut (contém a chave no path), converter para API v1
+              // Ex: https://api.pushcut.io/SECRET/notifications/Nome → usa API-Key header
+              let webhookUrl = finalWebhookUrl;
+              const webhookHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+              const pushcutSecretMatch = finalWebhookUrl.match(
+                /^https:\/\/api\.pushcut\.io\/([^/]+)\/notifications\/(.+)$/
+              );
+              if (pushcutSecretMatch) {
+                const secretKey = pushcutSecretMatch[1];
+                const notifName = pushcutSecretMatch[2];
+                // Usa a API v1 que suporta sobrescrita dinâmica de título/texto
+                webhookUrl = `https://api.pushcut.io/v1/notifications/${notifName}`;
+                webhookHeaders['API-Key'] = secretKey;
+                console.log('[finalize-payment] Pushcut: convertido para API v1 com API-Key header');
+              }
+
+              const r = await fetch(webhookUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: webhookHeaders,
                 body: JSON.stringify({
+                  title: notifTitle,
+                  text: notifText,
                   event: 'sale_approved',
                   timestamp: new Date().toISOString(),
                   transaction_id: finalTxId,
@@ -362,8 +384,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     const val = amountNum.toLocaleString('pt-PT');
                     for (const token of tokens) {
                         await sendPushNotificationV1(token, {
-                            title: 'VELORA — Nova Venda! 🎉',
-                            body: `Venda aprovada: ${val} MT via ${providerStr}`,
+                            title: '🎉 Venda aprovada!',
+                            body: `Venda de ${val} MT via ${providerStr}`,
                         });
                     }
                     console.log(`FCM Push Notifications disparadas para ${tokens.length} dispositivos.`);
