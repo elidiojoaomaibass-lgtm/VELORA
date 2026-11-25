@@ -75,13 +75,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // If email not provided, try to find it via product
         if (!finalMerchantEmail && product_id) {
            try {
-             const { data: prodData } = await dbClient.from('products').select('user_email').eq('id', product_id).single();
+             const { data: prodData } = await dbClient.from('products').select('user_email').eq('id', product_id).maybeSingle();
              if (prodData && prodData.user_email) {
                finalMerchantEmail = prodData.user_email;
              }
            } catch (e) {
              console.warn('Failed to fetch user_email from product:', e);
            }
+        }
+
+        if (!finalMerchantEmail) {
+           finalMerchantEmail = process.env.VITE_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'ofcdzin6@gmail.com';
         }
 
         if (finalMerchantEmail) {
@@ -138,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const finalLowtrackToken = supabaseLowtrackToken || process.env.VITE_MERCHANT_LOWTRACK_TOKEN || '';
 
     // Persist successful transaction to Supabase
-    if (supabase) {
+    if (dbClient) {
       try {
         const notifMeta = JSON.stringify({
           webhook_url: finalWebhookUrl,
@@ -146,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           lowtrack_token: finalLowtrackToken,
         });
 
-        await supabase.from('transactions').upsert([{
+        const { error: upsertTxErr } = await dbClient.from('transactions').upsert([{
           id: finalTxId,
           type: 'payment',
           amount: amountNum,
@@ -154,20 +158,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           method: providerStr,
           status: 'Concluído',
           reference: reference || finalTxId,
-          description: `${product_name || 'Compra online'}||NOTIF_META||${notifMeta}`,
+          description: `Compra: ${product_name || 'Produto'}||PRODUCT_ID||${product_id || ''}${notifMeta ? '||NOTIF_META||' + notifMeta : ''}`,
           customerName: customerName || 'Cliente',
           customerEmail: finalMerchantEmail || '',
+          customeremail: finalMerchantEmail || '',
           device: 'Desktop/Mobile',
           createdat: new Date().toISOString(),
         }]);
-        console.log('Transação salva no Supabase:', finalTxId);
+        if (upsertTxErr) {
+          console.error('[finalize-payment] Erro ao gravar transação no Supabase:', upsertTxErr.message);
+        } else {
+          console.log('[finalize-payment] Transação salva com sucesso no Supabase:', finalTxId);
+        }
 
         // Update product sales and revenue
         if (product_id) {
            try {
-             const { data: prod } = await supabase.from('products').select('sales, revenue').eq('id', product_id).single();
+             const { data: prod } = await dbClient.from('products').select('sales, revenue').eq('id', product_id).maybeSingle();
              if (prod) {
-                 await supabase.from('products').update({
+                 await dbClient.from('products').update({
                      sales: (prod.sales || 0) + 1,
                      revenue: (prod.revenue || 0) + amountNum
                  }).eq('id', product_id);
@@ -217,7 +226,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               console.log('Merchant Webhook:', r.status, resText.slice(0, 100));
 
               // Debug log in DB
-              await supabase.from('transactions').insert([{
+              await dbClient.from('transactions').insert([{
                 id: `DBG_${Date.now()}`,
                 type: 'payment', amount: 0, phone: '000', method: 'Debug',
                 status: 'Debug', reference: 'Debug',
@@ -225,7 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               }]).catch(() => {});
             } catch (e: any) {
               console.error('Merchant Webhook erro:', e.message);
-              await supabase.from('transactions').insert([{
+              await dbClient.from('transactions').insert([{
                 id: `DBG_ERR_${Date.now()}`,
                 type: 'payment', amount: 0, phone: '000', method: 'Debug',
                 status: 'Debug', reference: 'Debug',

@@ -12,6 +12,7 @@ import { cn } from '../lib/utils';
 import { useTransactionsStore, useProductsStore, type Product } from '../lib/store';
 import { supabase } from '../lib/supabase';
 import { E2Payments } from '../lib/e2payments';
+import { getActiveUserEmail } from '../lib/userSettings';
 import { Logo } from './Logo';
 import { CountdownBanner } from './CountdownBanner';
 
@@ -109,6 +110,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
             );
 
             currentTxId = result.transaction_id || 'TX_' + Date.now();
+            const activeMerchantEmail = product.user_email || (await getActiveUserEmail()) || '';
 
             try {
                 await addTransaction({
@@ -121,7 +123,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                     reference: reference,
                     description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
                     customerName: name || 'Cliente',
-                    customerEmail: product.user_email || ''
+                    customerEmail: activeMerchantEmail,
                 });
             } catch (txErr) {
                 console.warn("Falha ao registar transação pendente", txErr);
@@ -130,37 +132,44 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
             // Atualiza a transação para Concluído temporariamente, aguardando webhook real
             await updateTransactionStatus(currentTxId, 'Concluído');
 
-            // Disparar webhooks e notificações via servidor (idêntico ao webhook do VendasView)
+            // Disparar webhooks e finalização de pagamento com AWAIT e keepalive para garantir que são gravados no Supabase e disparados antes do redirect
             try {
-                fetch('/api/webhook', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        status: 'success',
-                        transaction_id: currentTxId,
-                        reference: reference,
-                        amount: product.price,
-                        phone: sanitizedPaymentPhone,
-                        customerName: name || 'Cliente',
-                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
+                await Promise.allSettled([
+                    fetch('/api/finalize-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        keepalive: true,
+                        body: JSON.stringify({
+                            transactionId: currentTxId,
+                            phone: sanitizedPaymentPhone,
+                            amount: product.price,
+                            reference: reference,
+                            customerName: name || 'Cliente',
+                            product_id: product.id,
+                            product_name: product.name,
+                            merchant_user_email: activeMerchantEmail,
+                            method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
+                        })
+                    }),
+                    fetch('/api/webhook', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        keepalive: true,
+                        body: JSON.stringify({
+                            status: 'success',
+                            transaction_id: currentTxId,
+                            reference: reference,
+                            amount: product.price,
+                            phone: sanitizedPaymentPhone,
+                            customerName: name || 'Cliente',
+                            method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
+                            product_id: product.id,
+                            product_name: product.name,
+                            user_id: activeMerchantEmail,
+                            merchant_user_email: activeMerchantEmail,
+                        })
                     })
-                }).catch(err => console.warn('Webhook dispatch failed:', err));
-
-                fetch('/api/finalize-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        transactionId: currentTxId,
-                        phone: sanitizedPaymentPhone,
-                        amount: product.price,
-                        reference: reference,
-                        customerName: name || 'Cliente',
-                        product_id: product.id,
-                        product_name: product.name,
-                        merchant_user_email: product.user_email || '',
-                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
-                    })
-                }).catch(err => console.warn('Finalize payment dispatch failed:', err));
+                ]);
             } catch (e: unknown) {
                 console.warn('Failed to dispatch webhook / finalize-payment:', e);
             }

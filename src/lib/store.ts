@@ -615,6 +615,7 @@ export const initTransactionsRealtime = () => {
             if (data && data.length > 0) {
                 const mapped = data.map((tx: any) => ({
                     ...tx,
+                    customerEmail: tx.customerEmail || tx.customeremail || '',
                     amount: Number(tx.amount),
                     createdAt: tx.createdAt || tx.created_at || tx.createdat
                 }));
@@ -662,6 +663,7 @@ export const useTransactionsStore = () => {
                 if (data && data.length > 0) {
                     const mapped = data.map((tx: any) => ({
                         ...tx,
+                        customerEmail: tx.customerEmail || tx.customeremail || '',
                         amount: Number(tx.amount),
                         createdAt: tx.createdAt || tx.created_at || tx.createdat
                     }));
@@ -671,6 +673,7 @@ export const useTransactionsStore = () => {
                     if (allData && allData.length > 0) {
                         const mapped = allData.map((tx: any) => ({
                             ...tx,
+                            customerEmail: tx.customerEmail || tx.customeremail || '',
                             amount: Number(tx.amount),
                             createdAt: tx.createdAt || tx.created_at || tx.createdat
                         }));
@@ -740,6 +743,7 @@ export const useTransactionsStore = () => {
                     description: newTx.description,
                     customerName: newTx.customerName,
                     customerEmail: newTx.customerEmail,
+                    customeremail: newTx.customerEmail,
                     device: newTx.device,
                     createdat: newTx.createdAt
                 }]);

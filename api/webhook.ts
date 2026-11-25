@@ -89,6 +89,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`Upsert transação ${transaction_id} -> status: ${finalStatus}`);
 
+    const initialMerchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || '';
+
     // Upsert garante que a transação é criada se não existir (caso o browser falhou ao inserir)
     const { error } = await supabase
       .from('transactions')
@@ -103,6 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           reference: reference || transaction_id,
           customerName: customerName || 'Cliente',
           description: payload.description || '',
+          ...(initialMerchantEmail ? { customerEmail: initialMerchantEmail, customeremail: initialMerchantEmail } : {}),
           createdat: new Date().toISOString(),
         },
         { onConflict: 'id' }
@@ -144,7 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // ── Determinar o email do merchant para enviar push e webhook ──
-      let merchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || updatedTx?.customerEmail || '';
+      let merchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || updatedTx?.customerEmail || updatedTx?.customeremail || '';
 
       const effectiveProductId = payload.product_id || payload.productId;
       if (!merchantEmail && (effectiveProductId || updatedTx?.description)) {
@@ -158,6 +161,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (prodData?.user_email) merchantEmail = prodData.user_email;
           } catch {}
         }
+      }
+
+      if (!merchantEmail) {
+        merchantEmail = process.env.VITE_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'ofcdzin6@gmail.com';
+      }
+
+      // Garantir que a transação no Supabase fica associada ao merchant para sincronizar entre PC e telemóvel
+      if (merchantEmail && (!updatedTx?.customeremail && !updatedTx?.customerEmail)) {
+        await supabase.from('transactions').update({
+          customerEmail: merchantEmail,
+          customeremail: merchantEmail
+        }).eq('id', transaction_id).catch(() => {});
       }
 
       const userId = merchantEmail;

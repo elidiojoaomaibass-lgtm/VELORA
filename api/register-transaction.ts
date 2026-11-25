@@ -44,6 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: description || '',
       customerName: customerName || 'Cliente',
       customerEmail: customerEmail || '',
+      customeremail: customerEmail || '',
       device: device || 'Desktop',
       createdat: new Date().toISOString(),
     }], { onConflict: 'id' });
