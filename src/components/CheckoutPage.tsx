@@ -304,8 +304,7 @@ export const CheckoutPage = () => {
                 
                 return; // Do not proceed to finalize immediately!
             } else {
-                // Synchronous success from gateway
-                await updateTransactionStatus(currentTxId, 'Concluído');
+                // Synchronous success from gateway: deixar /api/finalize-payment fazer a transição atómica Pendente -> Concluído e disparar 1 único webhook
                 await finalizeAndRedirect();
             }
 

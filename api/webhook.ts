@@ -89,29 +89,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`Upsert transação ${transaction_id} -> status: ${finalStatus}`);
 
-    // Idempotência: se a transação já está Concluído, não duplicar vendas nem disparar segundo webhook
+    const initialMerchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || '';
+
+    // Bloqueio atómico: garantir que apenas UMA requisição processa a transição para Concluído
     const { data: existingTx } = await supabase
       .from('transactions')
       .select('id, status')
       .eq('id', transaction_id)
       .maybeSingle();
 
-    if (existingTx && existingTx.status === 'Concluído' && isSuccess) {
-      console.log(`[webhook] Transação ${transaction_id} já estava Concluída. Ignorando disparo duplicado.`);
-      return res.status(200).json({
-        message: 'Webhook already processed',
-        alreadyProcessed: true,
-        updated: { transaction_id, status: finalStatus, reference }
-      });
-    }
-
-    const initialMerchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || '';
-
-    // Upsert garante que a transação é criada se não existir (caso o browser falhou ao inserir)
-    const { error } = await supabase
-      .from('transactions')
-      .upsert(
-        {
+    let error: any = null;
+    if (existingTx) {
+      if (existingTx.status === 'Concluído' && isSuccess) {
+        console.log(`[webhook] Transação ${transaction_id} já estava Concluída. Ignorando disparo duplicado.`);
+        return res.status(200).json({
+          message: 'Webhook already processed',
+          alreadyProcessed: true,
+          updated: { transaction_id, status: finalStatus, reference }
+        });
+      }
+      if (isSuccess) {
+        const { data: claimedRows, error: claimErr } = await supabase
+          .from('transactions')
+          .update({
+            amount: amount ? Number(amount) : undefined,
+            phone: phone || undefined,
+            method: method || undefined,
+            status: finalStatus,
+            reference: reference || transaction_id,
+            customername: customerName || undefined,
+            ...(payload.description ? { description: payload.description } : {}),
+            ...(initialMerchantEmail ? { customeremail: initialMerchantEmail } : {}),
+          })
+          .eq('id', transaction_id)
+          .neq('status', 'Concluído')
+          .select('id');
+        error = claimErr;
+        if (!claimErr && (!claimedRows || claimedRows.length === 0)) {
+          console.log(`[webhook] Concorrência detetada para ${transaction_id}. Outra requisição já processou.`);
+          return res.status(200).json({
+            message: 'Webhook already claimed',
+            alreadyProcessed: true,
+            updated: { transaction_id, status: finalStatus, reference }
+          });
+        }
+      } else {
+        const { error: updErr } = await supabase
+          .from('transactions')
+          .update({ status: finalStatus })
+          .eq('id', transaction_id);
+        error = updErr;
+      }
+    } else {
+      const { error: insertErr } = await supabase
+        .from('transactions')
+        .insert({
           id: transaction_id,
           type: 'payment',
           amount: amount ? Number(amount) : 0,
@@ -123,9 +155,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           description: payload.description || '',
           ...(initialMerchantEmail ? { customeremail: initialMerchantEmail } : {}),
           createdat: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      );
+        });
+      if (insertErr && insertErr.code === '23505' && isSuccess) {
+        console.log(`[webhook] Concorrência no insert para ${transaction_id}. Ignorando disparo duplicado.`);
+        return res.status(200).json({
+          message: 'Webhook already inserted',
+          alreadyProcessed: true,
+          updated: { transaction_id, status: finalStatus, reference }
+        });
+      }
+      error = insertErr;
+    }
 
     // Buscar a transação actualizada separadamente
     const { data: updatedTx } = await supabase

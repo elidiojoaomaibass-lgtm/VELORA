@@ -179,30 +179,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Persist successful transaction to Supabase
     if (dbClient) {
       try {
-        // Idempotência: verificar se esta transação já foi finalizada para evitar webhooks/vendas duplicadas
-        const { data: existingTx } = await dbClient
-          .from('transactions')
-          .select('id, status')
-          .eq('id', finalTxId)
-          .maybeSingle();
-
-        if (existingTx && existingTx.status === 'Concluído') {
-          console.log(`[finalize-payment] Transação ${finalTxId} já estava Concluída. Ignorando disparo duplicado.`);
-          return res.status(200).json({
-            success: true,
-            alreadyProcessed: true,
-            transactionId: finalTxId,
-            message: 'Payment already finalized.',
-          });
-        }
-
         const notifMeta = JSON.stringify({
           webhook_url: finalWebhookUrl,
           webhook_events: finalWebhookEvents,
           lowtrack_token: finalLowtrackToken,
         });
 
-        const { error: upsertTxErr } = await dbClient.from('transactions').upsert([{
+        const txPayload = {
           id: finalTxId,
           type: 'payment',
           amount: amountNum,
@@ -215,11 +198,73 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           customeremail: finalMerchantEmail || '',
           device: 'Desktop/Mobile',
           createdat: new Date().toISOString(),
-        }]);
-        if (upsertTxErr) {
-          console.error('[finalize-payment] Erro ao gravar transação no Supabase:', upsertTxErr.message);
+        };
+
+        // Bloqueio atómico: garantir que apenas UMA requisição processa a transição para Concluído
+        const { data: existingTx } = await dbClient
+          .from('transactions')
+          .select('id, status')
+          .eq('id', finalTxId)
+          .maybeSingle();
+
+        if (existingTx) {
+          if (existingTx.status === 'Concluído') {
+            console.log(`[finalize-payment] Transação ${finalTxId} já estava Concluída. Ignorando disparo duplicado.`);
+            return res.status(200).json({
+              success: true,
+              alreadyProcessed: true,
+              transactionId: finalTxId,
+              message: 'Payment already finalized.',
+            });
+          }
+          // UPDATE atómico condicional: só ganha quem alterar de != 'Concluído' para 'Concluído'
+          const { data: claimedRows, error: claimErr } = await dbClient
+            .from('transactions')
+            .update({
+              amount: amountNum,
+              phone: msisdn,
+              method: providerStr,
+              status: 'Concluído',
+              reference: reference || finalTxId,
+              description: txPayload.description,
+              customername: txPayload.customername,
+              customeremail: txPayload.customeremail,
+              device: 'Desktop/Mobile',
+            })
+            .eq('id', finalTxId)
+            .neq('status', 'Concluído')
+            .select('id');
+
+          if (claimErr) {
+            console.error('[finalize-payment] Erro no update atómico:', claimErr.message);
+          }
+          if (!claimedRows || claimedRows.length === 0) {
+            console.log(`[finalize-payment] Concorrência detetada para ${finalTxId}. Outra requisição já processou.`);
+            return res.status(200).json({
+              success: true,
+              alreadyProcessed: true,
+              transactionId: finalTxId,
+              message: 'Payment already claimed by another request.',
+            });
+          }
+          console.log('[finalize-payment] Transação atualizada atomicamente no Supabase:', finalTxId);
         } else {
-          console.log('[finalize-payment] Transação salva com sucesso no Supabase:', finalTxId);
+          // INSERT atómico: se der conflito de chave primária (23505), outra requisição inseriu primeiro
+          const { error: insertErr } = await dbClient.from('transactions').insert([txPayload]);
+          if (insertErr) {
+            if (insertErr.code === '23505') {
+              console.log(`[finalize-payment] Concorrência no insert para ${finalTxId}. Ignorando disparo duplicado.`);
+              return res.status(200).json({
+                success: true,
+                alreadyProcessed: true,
+                transactionId: finalTxId,
+                message: 'Payment already inserted by another request.',
+              });
+            }
+            console.error('[finalize-payment] Erro ao gravar transação no Supabase:', insertErr.message);
+          } else {
+            console.log('[finalize-payment] Transação salva com sucesso no Supabase:', finalTxId);
+          }
         }
 
         // Update product sales and revenue
@@ -275,22 +320,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               });
               const resText = await r.text().catch(() => '');
               console.log('Merchant Webhook:', r.status, resText.slice(0, 100));
-
-              // Debug log in DB
-              await dbClient.from('transactions').insert([{
-                id: `DBG_${Date.now()}`,
-                type: 'payment', amount: 0, phone: '000', method: 'Debug',
-                status: 'Debug', reference: 'Debug',
-                description: `Webhook res: ${r.status} - ${resText.slice(0, 100)}`,
-              }]).catch(() => {});
             } catch (e: any) {
               console.error('Merchant Webhook erro:', e.message);
-              await dbClient.from('transactions').insert([{
-                id: `DBG_ERR_${Date.now()}`,
-                type: 'payment', amount: 0, phone: '000', method: 'Debug',
-                status: 'Debug', reference: 'Debug',
-                description: `Webhook err: ${e.message}`,
-              }]).catch(() => {});
             }
           })());
         }

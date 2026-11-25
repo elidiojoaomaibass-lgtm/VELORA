@@ -10,7 +10,6 @@ import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
 
 import { useTransactionsStore, useProductsStore, type Product } from '../lib/store';
-import { supabase } from '../lib/supabase';
 import { E2Payments } from '../lib/e2payments';
 import { getActiveUserEmail } from '../lib/userSettings';
 import { Logo } from './Logo';
@@ -129,10 +128,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                 console.warn("Falha ao registar transação pendente", txErr);
             }
 
-            // Atualiza a transação para Concluído temporariamente, aguardando webhook real
-            await updateTransactionStatus(currentTxId, 'Concluído');
-
-            // Disparar finalização de pagamento (grava no Supabase e dispara webhook/push uma única vez)
+            // Disparar finalização de pagamento (grava no Supabase atomicamente e dispara webhook/push uma única vez)
             try {
                 await fetch('/api/finalize-payment', {
                     method: 'POST',
@@ -173,17 +169,8 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
 
             setStatus('success');
 
-            // Increment sales count and total revenue for the product
+            // Update local store optimistically (Supabase sales/revenue already updated by /api/finalize-payment)
             try {
-                // Update in Supabase
-                await supabase
-                    .from('products')
-                    .update({
-                        sales: (product.sales ?? 0) + 1,
-                        revenue: (product.revenue ?? 0) + product.price,
-                    })
-                    .eq('id', product.id);
-                // Update local store if needed (optimistic)
                 updateProducts(
                     products.map(p =>
                         p.id === product.id
@@ -192,7 +179,7 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                     )
                 );
             } catch (e: unknown) {
-                console.warn('Failed to increment product sales:', e);
+                console.warn('Failed to update local product sales:', e);
             }
 
             // Redirecionar para a página de obrigado com detalhes da compra
