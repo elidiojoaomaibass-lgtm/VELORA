@@ -37,8 +37,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (tokens && tokens.length > 0) {
         const val = Number(amount || 0).toLocaleString('pt-PT');
         const methodStr = method || 'M-Pesa';
-        const notifTitle = title || 'VELORA — Nova Venda! 🎉';
-        const notifBody = customBody || `Venda aprovada: ${val} MT via ${methodStr}`;
+        const notifTitle = title || '🎉 Venda aprovada!';
+        const notifBody = customBody || `Venda de ${val} MT via ${methodStr}`;
 
         let successCount = 0;
         for (const token of tokens) {

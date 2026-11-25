@@ -294,7 +294,7 @@ export const FerramentasView = () => {
         }
 
         // 4. DISPARAR IMEDIATAMENTE NOTIFICAÇÃO LOCAL NESTE DISPOSITIVO
-        sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
+        sendLocalNotification('🎉 Venda aprovada!', {
             body: `Venda de ${val.toLocaleString('pt-PT')} MT via M-Pesa`,
             icon: '/logo.png'
         });
@@ -336,8 +336,8 @@ export const FerramentasView = () => {
                 merchant_user_email: email,
                 amount: val,
                 method: 'M-Pesa',
-                title: 'Você recebeu um novo pedido! 🎉 (TESTE)',
-                body: `Venda aprovada de ${val.toLocaleString('pt-PT')} MT M-Pesa`,
+                title: '🎉 Venda aprovada!',
+                body: `Venda de ${val.toLocaleString('pt-PT')} MT via M-Pesa`,
             })
         }).then(async (res) => {
             const data = await res.json().catch(() => ({}));

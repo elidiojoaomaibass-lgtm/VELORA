@@ -561,7 +561,7 @@ const ensureRealtimeSubscribed = (fetchFn: () => Promise<void>) => {
                         });
                     } else if (tx.status === 'Concluído') {
                         sendLocalNotification('🎉 Venda aprovada!', {
-                            body: `${customer} · ${val} MT via ${mth}`,
+                            body: `Venda de ${val} MT via ${mth}`,
                             icon: '/logo.png'
                         });
                     } else if (tx.status === 'Falhou') {
@@ -581,7 +581,7 @@ const ensureRealtimeSubscribed = (fetchFn: () => Promise<void>) => {
             })
             .on('broadcast', { event: 'test_push' }, (payload: any) => {
                 const val = Number(payload.payload?.amount || 0).toLocaleString('pt-PT');
-                sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
+                sendLocalNotification('🎉 Venda aprovada!', {
                     body: `Venda de ${val} MT via ${payload.payload?.method || 'Gateway'}`,
                     icon: '/logo.png'
                 });

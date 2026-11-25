@@ -18,7 +18,7 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const title = payload.notification?.title || 'VELORA — Nova Venda! 🎉';
+  const title = payload.notification?.title || '🎉 Venda aprovada!';
   const options = {
     body: payload.notification?.body || '',
     icon: '/logo.png',

@@ -308,25 +308,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const notifTitle = '🎉 Venda aprovada!';
               const notifText = `Venda de ${val} MT via ${providerStr}`;
 
-              // Se for URL secreto do Pushcut (contém a chave no path), converter para API v1
-              // Ex: https://api.pushcut.io/SECRET/notifications/Nome → usa API-Key header
-              let webhookUrl = finalWebhookUrl;
-              const webhookHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-              const pushcutSecretMatch = finalWebhookUrl.match(
-                /^https:\/\/api\.pushcut\.io\/([^/]+)\/notifications\/(.+)$/
-              );
-              if (pushcutSecretMatch) {
-                const secretKey = pushcutSecretMatch[1];
-                const notifName = pushcutSecretMatch[2];
-                // Usa a API v1 que suporta sobrescrita dinâmica de título/texto
-                webhookUrl = `https://api.pushcut.io/v1/notifications/${notifName}`;
-                webhookHeaders['API-Key'] = secretKey;
-                console.log('[finalize-payment] Pushcut: convertido para API v1 com API-Key header');
-              }
-
-              const r = await fetch(webhookUrl, {
+              const r = await fetch(finalWebhookUrl, {
                 method: 'POST',
-                headers: webhookHeaders,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   title: notifTitle,
                   text: notifText,

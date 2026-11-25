@@ -341,24 +341,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const notifTitle = isSuccess ? '🎉 Venda aprovada!' : '⚠️ Venda falhada';
               const notifText = isSuccess ? `Venda de ${val} MT via ${methodStr}` : `Transação de ${val} MT falhou.`;
 
-              // Se for URL secreto do Pushcut, converter para API v1 com API-Key header
-              // para sobrescrever dinamicamente o título (sem "TESTE" do template)
-              let webhookUrl = merchantWebhookUrl;
-              const webhookHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-              const pushcutSecretMatch = merchantWebhookUrl.match(
-                /^https:\/\/api\.pushcut\.io\/([^/]+)\/notifications\/(.+)$/
-              );
-              if (pushcutSecretMatch) {
-                const secretKey = pushcutSecretMatch[1];
-                const notifName = pushcutSecretMatch[2];
-                webhookUrl = `https://api.pushcut.io/v1/notifications/${notifName}`;
-                webhookHeaders['API-Key'] = secretKey;
-                console.log('[webhook] Pushcut: convertido para API v1 com API-Key header');
-              }
-
-              await fetch(webhookUrl, {
+              await fetch(merchantWebhookUrl, {
                 method: 'POST',
-                headers: webhookHeaders,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   title: notifTitle,
                   text: notifText,
@@ -369,7 +354,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   status: finalStatus
                 })
               });
-              console.log(`[webhook] Webhook enviado para ${webhookUrl}`);
+              console.log(`[webhook] Webhook enviado para ${merchantWebhookUrl}`);
             }
           } catch (whErr) { console.error('Erro Merchant Webhook', whErr); }
         })());
