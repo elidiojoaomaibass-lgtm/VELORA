@@ -246,8 +246,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               status: 'Concluído',
               reference: ref,
               description: `Saque B2C - M-Pesa (${cleanPhone})`,
-              customerName: recipient_name || (cleanPhone === '856195186' ? 'Joao Maibass' : 'Beneficiário B2C'),
-              customerEmail: user_email || 'b2c@gateway',
+              customername: recipient_name || (cleanPhone === '856195186' ? 'Joao Maibass' : 'Beneficiário B2C'),
+              customeremail: user_email || 'b2c@gateway',
               createdat: new Date().toISOString(),
             },
           ]);

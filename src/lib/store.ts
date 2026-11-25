@@ -612,10 +612,12 @@ export const initTransactionsRealtime = () => {
     ensureRealtimeSubscribed(async () => {
         try {
             const { data } = await supabase.from('transactions').select('*').order('createdat', { ascending: false });
-            if (data && data.length > 0) {
+            if (data && Array.isArray(data)) {
                 const mapped = data.map((tx: any) => ({
                     ...tx,
+                    customerName: tx.customerName || tx.customername || 'Cliente',
                     customerEmail: tx.customerEmail || tx.customeremail || '',
+                    failureReason: tx.failureReason || tx.failurereason,
                     amount: Number(tx.amount),
                     createdAt: tx.createdAt || tx.created_at || tx.createdat
                 }));
@@ -663,24 +665,25 @@ export const useTransactionsStore = () => {
                 if (data && data.length > 0) {
                     const mapped = data.map((tx: any) => ({
                         ...tx,
+                        customerName: tx.customerName || tx.customername || 'Cliente',
                         customerEmail: tx.customerEmail || tx.customeremail || '',
+                        failureReason: tx.failureReason || tx.failurereason,
                         amount: Number(tx.amount),
                         createdAt: tx.createdAt || tx.created_at || tx.createdat
                     }));
                     updateTransactions(mapped);
                 } else {
-                    const { data: allData } = await supabase.from('transactions').select('*').order('createdat', { ascending: false });
-                    if (allData && allData.length > 0) {
+                    const { data: allData, error: allErr } = await supabase.from('transactions').select('*').order('createdat', { ascending: false });
+                    if (!allErr && allData && Array.isArray(allData)) {
                         const mapped = allData.map((tx: any) => ({
                             ...tx,
+                            customerName: tx.customerName || tx.customername || 'Cliente',
                             customerEmail: tx.customerEmail || tx.customeremail || '',
+                            failureReason: tx.failureReason || tx.failurereason,
                             amount: Number(tx.amount),
                             createdAt: tx.createdAt || tx.created_at || tx.createdat
                         }));
                         updateTransactions(mapped);
-                    } else {
-                        const local = getInitialTransactions();
-                        if (local.length > 0) updateTransactions(local);
                     }
                 }
             } catch (err) {
@@ -732,7 +735,7 @@ export const useTransactionsStore = () => {
         try {
             const { error } = await supabase
                 .from('transactions')
-                .insert([{
+                .upsert([{
                     id: newTx.id,
                     type: newTx.type,
                     amount: newTx.amount,
@@ -741,20 +744,16 @@ export const useTransactionsStore = () => {
                     status: newTx.status,
                     reference: newTx.reference,
                     description: newTx.description,
-                    customerName: newTx.customerName,
-                    customerEmail: newTx.customerEmail,
-                    customeremail: newTx.customerEmail,
+                    customername: newTx.customerName || 'Cliente',
+                    customeremail: newTx.customerEmail || '',
                     device: newTx.device,
                     createdat: newTx.createdAt
-                }]);
+                }], { onConflict: 'id' });
             if (error) {
                 console.warn('Erro ao inserir transação no Supabase:', error);
             }
-
-
-
         } catch (err) {
-            console.warn('Falha de rede ao persistir transação no Supabase (salva apenas localmente):', err);
+            console.warn('Falha de rede ao persistir transação no Supabase:', err);
         }
     };
 
@@ -775,7 +774,7 @@ export const useTransactionsStore = () => {
         }
         try {
         const updatePayload: any = { status };
-        if (failureReason) updatePayload.failureReason = failureReason;
+        if (failureReason) updatePayload.failurereason = failureReason;
         await supabase
             .from('transactions')
             .update(updatePayload)

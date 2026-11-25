@@ -187,6 +187,71 @@ function apiSettingsDevPlugin(env: Record<string, string>) {
         }
         next();
       });
+
+      // Generic dev-server runner for Vercel API functions (/api/*) so localhost saves to Supabase & fires webhooks
+      const apiRoutes = [
+        '/api/finalize-payment',
+        '/api/webhook',
+        '/api/register-transaction',
+        '/api/transaction-status',
+        '/api/notify',
+        '/api/notify-ext',
+        '/api/kwikpay',
+      ];
+      Object.assign(process.env, env);
+      server.middlewares.use(async (req: any, res: any, next: any) => {
+        const rawUrl = req.url || '';
+        const pathname = rawUrl.split('?')[0];
+        if (!apiRoutes.includes(pathname)) {
+          return next();
+        }
+        try {
+          const parsedUrl = new URL(rawUrl, 'http://localhost');
+          const query: Record<string, string> = {};
+          parsedUrl.searchParams.forEach((v, k) => { query[k] = v; });
+
+          let body: any = {};
+          if (req.method !== 'GET' && req.method !== 'HEAD') {
+            const chunks: any[] = [];
+            for await (const chunk of req) chunks.push(chunk);
+            const rawBody = Buffer.concat(chunks).toString();
+            if (rawBody) {
+              try { body = JSON.parse(rawBody); } catch { body = rawBody; }
+            }
+          }
+
+          const vercelReq: any = Object.assign(req, { query, body });
+          const vercelRes: any = {
+            status(code: number) { res.statusCode = code; return this; },
+            setHeader(k: string, v: string) { res.setHeader(k, v); return this; },
+            json(data: any) {
+              if (!res.headersSent) res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(data));
+              return this;
+            },
+            send(data: any) {
+              res.end(typeof data === 'string' ? data : JSON.stringify(data));
+              return this;
+            },
+            end(data?: any) { res.end(data); return this; }
+          };
+
+          const mod = await server.ssrLoadModule(`${pathname}.ts`);
+          if (mod && typeof mod.default === 'function') {
+            await mod.default(vercelReq, vercelRes);
+            return;
+          }
+        } catch (err: any) {
+          console.error(`[vite-api-dev] Error in ${pathname}:`, err);
+          if (!res.headersSent) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: err?.message || 'Internal dev API error' }));
+          }
+          return;
+        }
+        next();
+      });
     }
   };
 }

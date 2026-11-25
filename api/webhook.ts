@@ -103,9 +103,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           method: method || 'e-Mola',
           status: finalStatus,
           reference: reference || transaction_id,
-          customerName: customerName || 'Cliente',
+          customername: customerName || 'Cliente',
           description: payload.description || '',
-          ...(initialMerchantEmail ? { customerEmail: initialMerchantEmail, customeremail: initialMerchantEmail } : {}),
+          ...(initialMerchantEmail ? { customeremail: initialMerchantEmail } : {}),
           createdat: new Date().toISOString(),
         },
         { onConflict: 'id' }
@@ -170,7 +170,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Garantir que a transação no Supabase fica associada ao merchant para sincronizar entre PC e telemóvel
       if (merchantEmail && (!updatedTx?.customeremail && !updatedTx?.customerEmail)) {
         await supabase.from('transactions').update({
-          customerEmail: merchantEmail,
           customeremail: merchantEmail
         }).eq('id', transaction_id).catch(() => {});
       }
