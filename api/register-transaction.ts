@@ -27,13 +27,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const { id, type, amount, phone, method, status, reference, description, customerName, customerEmail, device } = body;
+    const { action, id, type, amount, phone, method, status, reference, description, customerName, customerEmail, device, failureReason } = body;
 
-    if (!id || !amount) {
+    if (!id) {
+      return res.status(400).json({ error: 'id é obrigatório.' });
+    }
+
+    // Atualização de status (ex: Pendente -> Falhou após erro de PIN/saldo) contornando RLS
+    if (action === 'update_status') {
+      const updatePayload: Record<string, any> = {
+        status: status || 'Falhou',
+      };
+      if (failureReason) {
+        updatePayload.failurereason = failureReason;
+      }
+
+      const { data: updatedRows, error: updateErr } = await supabase
+        .from('transactions')
+        .update(updatePayload)
+        .eq('id', id)
+        .select('id');
+
+      if (updateErr) {
+        console.error('Erro ao atualizar status da transação:', updateErr);
+        return res.status(500).json({ error: updateErr.message });
+      }
+
+      if (updatedRows && updatedRows.length > 0) {
+        return res.status(200).json({ success: true, id, updated: true });
+      }
+      // Se não existia ainda e temos amount, continua para inserir abaixo
+      if (!amount) {
+        return res.status(200).json({ success: true, id, updated: false });
+      }
+    }
+
+    if (!amount) {
       return res.status(400).json({ error: 'id e amount são obrigatórios.' });
     }
 
-    const { error } = await supabase.from('transactions').upsert([{
+    const rowPayload: Record<string, any> = {
       id,
       type: type || 'payment',
       amount: Number(amount),
@@ -46,7 +79,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       customeremail: customerEmail || '',
       device: device || 'Desktop',
       createdat: new Date().toISOString(),
-    }], { onConflict: 'id' });
+    };
+    if (failureReason) {
+      rowPayload.failurereason = failureReason;
+    }
+
+    const { error } = await supabase.from('transactions').upsert([rowPayload], { onConflict: 'id' });
 
     if (error) {
       console.error('Erro ao registar transação:', error);

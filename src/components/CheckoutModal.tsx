@@ -92,7 +92,45 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
             return;
         }
 
-        let currentTxId = '';
+        const currentTxId = reference;
+        const activeMerchantEmail = product.user_email || (await getActiveUserEmail()) || '';
+        const methodLabel = method === 'mpesa' ? 'M-Pesa' : 'e-Mola';
+
+        // 1. Registar como Pendente ANTES de pedir o PIN no telemóvel
+        try {
+            const regRes = await fetch('/api/register-transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: currentTxId,
+                    type: 'payment',
+                    amount: product.price,
+                    phone: sanitizedPaymentPhone,
+                    method: methodLabel,
+                    status: 'Pendente',
+                    reference: reference,
+                    description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
+                    customerName: name || 'Cliente',
+                    customerEmail: activeMerchantEmail,
+                })
+            });
+            if (!regRes.ok) {
+                await addTransaction({
+                    id: currentTxId,
+                    type: 'payment',
+                    amount: product.price,
+                    phone: sanitizedPaymentPhone,
+                    method: methodLabel,
+                    status: 'Pendente',
+                    reference: reference,
+                    description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
+                    customerName: name || 'Cliente',
+                    customerEmail: activeMerchantEmail,
+                });
+            }
+        } catch (txErr) {
+            console.warn("Falha ao registar transação pendente", txErr);
+        }
 
         try {
             const e2p = new E2Payments();
@@ -107,26 +145,6 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                 sanitizedPaymentPhone,
                 reference
             );
-
-            currentTxId = result.transaction_id || 'TX_' + Date.now();
-            const activeMerchantEmail = product.user_email || (await getActiveUserEmail()) || '';
-
-            try {
-                await addTransaction({
-                    id: currentTxId,
-                    type: 'payment',
-                    amount: product.price,
-                    phone: sanitizedPaymentPhone,
-                    method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                    status: 'Pendente',
-                    reference: reference,
-                    description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
-                    customerName: name || 'Cliente',
-                    customerEmail: activeMerchantEmail,
-                });
-            } catch (txErr) {
-                console.warn("Falha ao registar transação pendente", txErr);
-            }
 
             const finalizeModalSale = async () => {
                 // Disparar finalização de pagamento (grava no Supabase atomicamente e dispara webhook/push uma única vez)
@@ -270,32 +288,30 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                 errorMsg = friendlyErrors[code];
             }
 
-            // Se falhou/cancelou, marca como "Falhou" com motivo
+            // Marca a transação Pendente como "Falhou" no Supabase (via server para contornar RLS e notificar a Dashboard)
             if (currentTxId) {
+                fetch('/api/register-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    keepalive: true,
+                    body: JSON.stringify({
+                        action: 'update_status',
+                        id: currentTxId,
+                        status: 'Falhou',
+                        failureReason: errorMsg,
+                        amount: product.price,
+                        phone: sanitizedPaymentPhone,
+                        method: methodLabel,
+                        reference,
+                        customerName: name || 'Cliente',
+                        customerEmail: activeMerchantEmail,
+                    })
+                }).catch(() => {});
                 updateTransactionStatus(currentTxId, 'Falhou', errorMsg).catch(() => {});
             }
 
             setErrorMessage(errorMsg);
             setStatus('idle');
-
-            // Fallback de segurança local para quando a requisição falhar totalmente (ex: localhost 404)
-            try {
-                addTransaction({
-                    id: `ERR_FB_${Date.now()}`,
-                    type: 'payment',
-                    amount: product.price,
-                    phone: paymentPhone,
-                    method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                    status: 'Falhou',
-                    reference: reference,
-                    description: `Compra: ${product.name}`,
-                    customerName: name || 'Cliente',
-                    customerEmail: product.user_email || '',
-                    failureReason: errorMsg
-                });
-            } catch (dbErr) {
-                console.warn("Falha no fallback de gravação Supabase (não autenticado):", dbErr);
-            }
         }
     };
 

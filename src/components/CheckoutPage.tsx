@@ -211,7 +211,45 @@ export const CheckoutPage = () => {
         }
         const _detectedMethod: 'mpesa' | 'emola' = 'emola';
 
-        let currentTxId = '';
+        let currentTxId = reference;
+        const activeMerchantEmail = product.user_email || (await getActiveUserEmail()) || '';
+        const methodLabel = method === 'mpesa' ? 'M-Pesa' : 'e-Mola';
+
+        // 1. Registar como Pendente ANTES de pedir o PIN no telemóvel
+        try {
+            const regRes = await fetch('/api/register-transaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: currentTxId,
+                    type: 'payment',
+                    amount: product.price,
+                    phone: sanitizedPaymentPhone,
+                    method: methodLabel,
+                    status: 'Pendente',
+                    reference: reference,
+                    description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
+                    customerName: name || 'Cliente',
+                    customerEmail: activeMerchantEmail,
+                })
+            });
+            if (!regRes.ok) {
+                await addTransaction({
+                    id: currentTxId,
+                    type: 'payment',
+                    amount: product.price,
+                    phone: sanitizedPaymentPhone,
+                    method: methodLabel,
+                    status: 'Pendente',
+                    reference: reference,
+                    description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
+                    customerName: name || 'Cliente',
+                    customerEmail: activeMerchantEmail,
+                });
+            }
+        } catch (txErr) {
+            console.warn("Falha ao registar transação pendente:", txErr);
+        }
 
         try {
             const e2p = new E2Payments();
@@ -226,47 +264,6 @@ export const CheckoutPage = () => {
                 sanitizedPaymentPhone,
                 reference
             );
-
-            currentTxId = result.transaction_id || 'TX_' + Date.now();
-
-            const activeMerchantEmail = product.user_email || (await getActiveUserEmail()) || '';
-
-            try {
-                // Usar endpoint server-side para contornar RLS do Supabase
-                const regRes = await fetch('/api/register-transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: currentTxId,
-                        type: 'payment',
-                        amount: product.price,
-                        phone: sanitizedPaymentPhone,
-                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                        status: 'Pendente',
-                        reference: reference,
-                        description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
-                        customerName: name || 'Cliente',
-                        customerEmail: activeMerchantEmail,
-                    })
-                });
-                if (!regRes.ok) {
-                    // Fallback: tenta addTransaction local se o server falhar
-                    await addTransaction({
-                        id: currentTxId,
-                        type: 'payment',
-                        amount: product.price,
-                        phone: sanitizedPaymentPhone,
-                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                        status: 'Pendente',
-                        reference: reference,
-                        description: `Compra: ${product.name}||PRODUCT_ID||${product.id}`,
-                        customerName: name || 'Cliente',
-                        customerEmail: activeMerchantEmail,
-                    });
-                }
-            } catch (txErr) {
-                console.warn("Falha ao registar transação pendente:", txErr);
-            }
 
             if (result.pending) {
                 setStatus('processing'); // Use processing instead of loading
@@ -396,12 +393,30 @@ export const CheckoutPage = () => {
             // (Movemos isto para dentro de finalizeAndRedirect)
             } // fechar finalizeAndRedirect
         } catch (err: any) {
-            setErrorMessage(err?.message || 'Ocorreu um erro ao processar a compra. Tente novamente.');
+            const failMsg = err?.message || 'Ocorreu um erro ao processar a compra. Tente novamente.';
+            setErrorMessage(failMsg);
             setStatus('idle');
 
-            // Marca a transação como "Falhou" em vez de ficar pendente ou duplicada
+            // Marca a transação Pendente como "Falhou" no Supabase (via server para contornar RLS e disparar notificação na Dashboard)
             if (currentTxId) {
-                updateTransactionStatus(currentTxId, 'Falhou', err?.message || 'Erro desconhecido').catch(() => {});
+                fetch('/api/register-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    keepalive: true,
+                    body: JSON.stringify({
+                        action: 'update_status',
+                        id: currentTxId,
+                        status: 'Falhou',
+                        failureReason: failMsg,
+                        amount: product.price,
+                        phone: sanitizedPaymentPhone,
+                        method: methodLabel,
+                        reference,
+                        customerName: name || 'Cliente',
+                        customerEmail: activeMerchantEmail,
+                    })
+                }).catch(() => {});
+                updateTransactionStatus(currentTxId, 'Falhou', failMsg).catch(() => {});
             }
         }
     };
