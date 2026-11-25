@@ -311,44 +311,27 @@ export const CheckoutPage = () => {
 
             async function finalizeAndRedirect() {
                 try {
-                    await Promise.allSettled([
-                        fetch(`/api/finalize-payment`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            keepalive: true,
-                            body: JSON.stringify({
-                                transactionId: currentTxId,
-                                phone: sanitizedPaymentPhone,
-                                amount: product.price,
-                                reference: reference,
-                                customerName: name,
-                                product_id: product.id,
-                                product_name: product.name,
-                                merchant_user_email: activeMerchantEmail,
-                                method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
-                            })
-                        }),
-                        fetch(`/api/webhook`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            keepalive: true,
-                            body: JSON.stringify({
-                                status: 'success',
-                                transaction_id: currentTxId,
-                                reference: reference,
-                                amount: product.price,
-                                phone: sanitizedPaymentPhone,
-                                customerName: name || 'Cliente',
-                                method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                                product_id: product.id,
-                                product_name: product.name,
-                                user_id: activeMerchantEmail,
-                                merchant_user_email: activeMerchantEmail,
-                            })
+                    const finalizeRes = await fetch(`/api/finalize-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        keepalive: true,
+                        body: JSON.stringify({
+                            transactionId: currentTxId,
+                            phone: sanitizedPaymentPhone,
+                            amount: product.price,
+                            reference: reference,
+                            customerName: name,
+                            product_id: product.id,
+                            product_name: product.name,
+                            merchant_user_email: activeMerchantEmail,
+                            method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
                         })
-                    ]);
+                    });
+                    if (!finalizeRes.ok) {
+                        console.error('Falha ao finalizar pagamento no backend', await finalizeRes.text());
+                    }
                 } catch (finalizeErr) {
-                    console.error('Erro de rede ao chamar finalize-payment / webhook:', finalizeErr);
+                    console.error('Erro de rede ao chamar finalize-payment:', finalizeErr);
                 }
 
             // Disparar os Pixels de conversão (Global e/ou Produto)

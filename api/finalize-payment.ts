@@ -179,6 +179,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Persist successful transaction to Supabase
     if (dbClient) {
       try {
+        // Idempotência: verificar se esta transação já foi finalizada para evitar webhooks/vendas duplicadas
+        const { data: existingTx } = await dbClient
+          .from('transactions')
+          .select('id, status')
+          .eq('id', finalTxId)
+          .maybeSingle();
+
+        if (existingTx && existingTx.status === 'Concluído') {
+          console.log(`[finalize-payment] Transação ${finalTxId} já estava Concluída. Ignorando disparo duplicado.`);
+          return res.status(200).json({
+            success: true,
+            alreadyProcessed: true,
+            transactionId: finalTxId,
+            message: 'Payment already finalized.',
+          });
+        }
+
         const notifMeta = JSON.stringify({
           webhook_url: finalWebhookUrl,
           webhook_events: finalWebhookEvents,

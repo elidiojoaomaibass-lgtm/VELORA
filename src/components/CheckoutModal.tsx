@@ -132,46 +132,26 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
             // Atualiza a transação para Concluído temporariamente, aguardando webhook real
             await updateTransactionStatus(currentTxId, 'Concluído');
 
-            // Disparar webhooks e finalização de pagamento com AWAIT e keepalive para garantir que são gravados no Supabase e disparados antes do redirect
+            // Disparar finalização de pagamento (grava no Supabase e dispara webhook/push uma única vez)
             try {
-                await Promise.allSettled([
-                    fetch('/api/finalize-payment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        keepalive: true,
-                        body: JSON.stringify({
-                            transactionId: currentTxId,
-                            phone: sanitizedPaymentPhone,
-                            amount: product.price,
-                            reference: reference,
-                            customerName: name || 'Cliente',
-                            product_id: product.id,
-                            product_name: product.name,
-                            merchant_user_email: activeMerchantEmail,
-                            method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
-                        })
-                    }),
-                    fetch('/api/webhook', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        keepalive: true,
-                        body: JSON.stringify({
-                            status: 'success',
-                            transaction_id: currentTxId,
-                            reference: reference,
-                            amount: product.price,
-                            phone: sanitizedPaymentPhone,
-                            customerName: name || 'Cliente',
-                            method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola',
-                            product_id: product.id,
-                            product_name: product.name,
-                            user_id: activeMerchantEmail,
-                            merchant_user_email: activeMerchantEmail,
-                        })
+                await fetch('/api/finalize-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    keepalive: true,
+                    body: JSON.stringify({
+                        transactionId: currentTxId,
+                        phone: sanitizedPaymentPhone,
+                        amount: product.price,
+                        reference: reference,
+                        customerName: name || 'Cliente',
+                        product_id: product.id,
+                        product_name: product.name,
+                        merchant_user_email: activeMerchantEmail,
+                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
                     })
-                ]);
+                });
             } catch (e: unknown) {
-                console.warn('Failed to dispatch webhook / finalize-payment:', e);
+                console.warn('Failed to dispatch finalize-payment:', e);
             }
 
             // Disparar os Pixels de conversão (Global e/ou Produto)

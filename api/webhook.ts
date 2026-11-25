@@ -89,6 +89,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`Upsert transação ${transaction_id} -> status: ${finalStatus}`);
 
+    // Idempotência: se a transação já está Concluído, não duplicar vendas nem disparar segundo webhook
+    const { data: existingTx } = await supabase
+      .from('transactions')
+      .select('id, status')
+      .eq('id', transaction_id)
+      .maybeSingle();
+
+    if (existingTx && existingTx.status === 'Concluído' && isSuccess) {
+      console.log(`[webhook] Transação ${transaction_id} já estava Concluída. Ignorando disparo duplicado.`);
+      return res.status(200).json({
+        message: 'Webhook already processed',
+        alreadyProcessed: true,
+        updated: { transaction_id, status: finalStatus, reference }
+      });
+    }
+
     const initialMerchantEmail = payload.user_id || payload.userId || payload.merchant_user_email || payload.email || '';
 
     // Upsert garante que a transação é criada se não existir (caso o browser falhou ao inserir)
