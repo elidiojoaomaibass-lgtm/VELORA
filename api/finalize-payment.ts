@@ -111,6 +111,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         supabaseWebhookEvents = JSON.stringify(parsed || {});
                     }
                     console.log(`Configurações carregadas do Supabase para: ${finalMerchantEmail} (webhook=${supabaseWebhookUrl ? 'SIM' : 'NÃO'})`);
+                } else {
+                    console.log(`[finalize-payment] Nenhum user_settings encontrado para: ${finalMerchantEmail}`);
+                }
+
+                // Se o email do produto não tem user_settings com webhook, tentar o admin como fallback
+                const adminEmail = (process.env.VITE_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
+                if (!supabaseWebhookUrl && finalMerchantEmail.toLowerCase() !== adminEmail) {
+                    console.log(`[finalize-payment] Fallback: procurando webhook nas configurações do admin (${adminEmail})`);
+                    try {
+                        const { data: adminSettings } = await dbClient
+                            .from('user_settings')
+                            .select('webhook_url, webhook_events, lowtrack_token')
+                            .eq('user_email', adminEmail)
+                            .maybeSingle();
+                        if (adminSettings) {
+                            if (adminSettings.webhook_url) supabaseWebhookUrl = adminSettings.webhook_url;
+                            if (adminSettings.lowtrack_token && !supabaseLowtrackToken) supabaseLowtrackToken = adminSettings.lowtrack_token;
+                            if (adminSettings.webhook_events && supabaseWebhookEvents === '{}') {
+                                const parsed = typeof adminSettings.webhook_events === 'string'
+                                    ? JSON.parse(adminSettings.webhook_events)
+                                    : adminSettings.webhook_events;
+                                if (parsed && typeof parsed === 'object') {
+                                    if (!supabaseWebhookUrl && parsed._extra?.webhook_url) {
+                                        supabaseWebhookUrl = parsed._extra.webhook_url;
+                                    }
+                                }
+                                supabaseWebhookEvents = JSON.stringify(parsed || {});
+                            }
+                            console.log(`[finalize-payment] Admin fallback: webhook=${supabaseWebhookUrl ? 'SIM' : 'NÃO'}`);
+                        }
+                    } catch (adminErr) {
+                        console.warn('[finalize-payment] Erro ao carregar admin user_settings:', adminErr);
+                    }
+                    // Usar o admin email para push notifications também
+                    finalMerchantEmail = adminEmail;
                 }
             } catch (e) {
                 console.warn('Erro ao carregar user_settings:', e);

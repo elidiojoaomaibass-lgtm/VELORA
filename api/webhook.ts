@@ -175,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }).eq('id', transaction_id).catch(() => {});
       }
 
-      const userId = merchantEmail;
+      let userId = merchantEmail;
       const notifications: Promise<void>[] = [];
 
       // Carregar configurações de user_settings da conta do merchant (Webhook URL, LowTrack Token, eventos)
@@ -211,6 +211,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               }
             }
             console.log(`[webhook] Configurações de user_settings carregadas para ${merchantEmail}: webhook=${merchantWebhookUrl ? 'SIM' : 'NÃO'}`);
+          }
+
+          // Fallback para o email admin se o email do produto não tiver webhook configurado
+          const adminEmail = (process.env.VITE_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'ofcdzin6@gmail.com').toLowerCase();
+          if (!merchantWebhookUrl && merchantEmail.toLowerCase() !== adminEmail) {
+            console.log(`[webhook] Fallback: procurando webhook nas configurações do admin (${adminEmail})`);
+            const { data: adminSettings } = await supabase
+              .from('user_settings')
+              .select('*')
+              .eq('user_email', adminEmail)
+              .maybeSingle();
+
+            if (adminSettings) {
+              if (adminSettings.webhook_url) merchantWebhookUrl = adminSettings.webhook_url;
+              if (adminSettings.lowtrack_token && !merchantLowtrackToken) merchantLowtrackToken = adminSettings.lowtrack_token;
+              if (adminSettings.webhook_events) {
+                const parsed = typeof adminSettings.webhook_events === 'string' ? JSON.parse(adminSettings.webhook_events) : adminSettings.webhook_events;
+                if (parsed && typeof parsed === 'object') {
+                  if (!merchantWebhookUrl && parsed._extra?.webhook_url) {
+                    merchantWebhookUrl = parsed._extra.webhook_url;
+                  }
+                  merchantWebhookEvents = { ...merchantWebhookEvents, ...parsed };
+                }
+              }
+              console.log(`[webhook] Admin fallback carregado: webhook=${merchantWebhookUrl ? 'SIM' : 'NÃO'}`);
+            }
+            userId = adminEmail;
           }
         } catch (phoneErr: any) {
           console.warn('[webhook] Erro ao carregar user_settings:', phoneErr.message);

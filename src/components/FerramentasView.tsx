@@ -200,23 +200,29 @@ export const FerramentasView = () => {
             }
         };
 
+        // Usar proxy server-side /api/notify-ext para evitar bloqueio de CORS
         toast.promise(
-            fetch(webhookUrl, {
+            fetch('/api/notify-ext', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(testPayload),
-            }).then(res => {
-                if (!res.ok) {
-                    throw new Error('Falha na resposta do webhook');
+                body: JSON.stringify({
+                    type: 'webhook',
+                    webhookUrl: webhookUrl,
+                    payload: testPayload,
+                }),
+            }).then(async res => {
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'Falha na resposta do webhook');
                 }
                 return true;
             }),
             {
-                loading: 'A enviar requisição de teste...',
-                success: 'Requisição de teste enviada com sucesso!',
-                error: 'Erro na requisição. Verifique o servidor destino ou possíveis bloqueios de CORS.',
+                loading: 'A enviar requisição de teste via servidor...',
+                success: 'Webhook de teste enviado com sucesso!',
+                error: (err: any) => `Erro: ${err?.message || 'Verifique a URL do webhook.'}`,
             }
         );
     };
@@ -288,7 +294,6 @@ export const FerramentasView = () => {
         }
 
         // 4. DISPARAR IMEDIATAMENTE NOTIFICAÇÃO LOCAL NESTE DISPOSITIVO
-        // O utilizador está a testar e deve ver o alerta e feedback sonoro/visual de imediato
         sendLocalNotification('🎉 Venda aprovada! (TESTE)', {
             body: `Venda de ${val.toLocaleString('pt-PT')} MT via M-Pesa`,
             icon: '/logo.png'
@@ -323,15 +328,20 @@ export const FerramentasView = () => {
             }
         });
 
-        // 6. Disparar notificação nativa via Edge Function para FCM (telemóveis em segundo plano)
-        const fcmPromise = email ? supabase.functions.invoke('send-push', {
-            body: {
+        // 6. Disparar notificação via /api/notify (FCM server-side) em vez de Edge Function inexistente
+        const fcmPromise = email ? fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                merchant_user_email: email,
+                amount: val,
+                method: 'M-Pesa',
                 title: 'Você recebeu um novo pedido! 🎉 (TESTE)',
                 body: `Venda aprovada de ${val.toLocaleString('pt-PT')} MT M-Pesa`,
-                user_email: email
-            }
-        }).then(({ error }: any) => {
-            if (error) console.warn('Aviso ao disparar FCM no teste:', error);
+            })
+        }).then(async (res) => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) console.warn('Aviso ao disparar FCM no teste:', data);
             return true;
         }).catch(() => true) : Promise.resolve(true);
 
