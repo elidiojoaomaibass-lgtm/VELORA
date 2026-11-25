@@ -128,70 +128,111 @@ export const CheckoutModal = ({ product, isOpen, onClose }: CheckoutModalProps) 
                 console.warn("Falha ao registar transação pendente", txErr);
             }
 
-            // Disparar finalização de pagamento (grava no Supabase atomicamente e dispara webhook/push uma única vez)
-            try {
-                await fetch('/api/finalize-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    keepalive: true,
-                    body: JSON.stringify({
-                        transactionId: currentTxId,
-                        phone: sanitizedPaymentPhone,
-                        amount: product.price,
-                        reference: reference,
-                        customerName: name || 'Cliente',
-                        product_id: product.id,
-                        product_name: product.name,
-                        merchant_user_email: activeMerchantEmail,
-                        method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
-                    })
-                });
-            } catch (e: unknown) {
-                console.warn('Failed to dispatch finalize-payment:', e);
-            }
-
-            // Disparar os Pixels de conversão (Global e/ou Produto)
-            import('../lib/pixel').then(({ initFacebookPixel, trackFacebookEvent, trackTiktokEvent }) => {
-                if (product.pixel) {
-                    initFacebookPixel(product.pixel);
+            const finalizeModalSale = async () => {
+                // Disparar finalização de pagamento (grava no Supabase atomicamente e dispara webhook/push uma única vez)
+                try {
+                    await fetch('/api/finalize-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        keepalive: true,
+                        body: JSON.stringify({
+                            transactionId: currentTxId,
+                            phone: sanitizedPaymentPhone,
+                            amount: product.price,
+                            reference: reference,
+                            customerName: name || 'Cliente',
+                            product_id: product.id,
+                            product_name: product.name,
+                            merchant_user_email: activeMerchantEmail,
+                            method: method === 'mpesa' ? 'M-Pesa' : 'e-Mola'
+                        })
+                    });
+                } catch (e: unknown) {
+                    console.warn('Failed to dispatch finalize-payment:', e);
                 }
-                trackFacebookEvent('Purchase', {
-                    value: product.price,
-                    currency: 'MZN',
-                    content_name: product.name
-                });
-                trackTiktokEvent('CompletePayment', {
-                    value: product.price,
-                    currency: 'MZN',
-                    content_name: product.name
-                });
-            });
 
-            setStatus('success');
+                // Disparar os Pixels de conversão (Global e/ou Produto)
+                import('../lib/pixel').then(({ initFacebookPixel, trackFacebookEvent, trackTiktokEvent }) => {
+                    if (product.pixel) {
+                        initFacebookPixel(product.pixel);
+                    }
+                    trackFacebookEvent('Purchase', {
+                        value: product.price,
+                        currency: 'MZN',
+                        content_name: product.name
+                    });
+                    trackTiktokEvent('CompletePayment', {
+                        value: product.price,
+                        currency: 'MZN',
+                        content_name: product.name
+                    });
+                });
 
-            // Update local store optimistically (Supabase sales/revenue already updated by /api/finalize-payment)
-            try {
-                updateProducts(
-                    products.map(p =>
-                        p.id === product.id
-                            ? { ...p, sales: (p.sales ?? 0) + 1, revenue: (p.revenue ?? 0) + product.price }
-                            : p
-                    )
-                );
-            } catch (e: unknown) {
-                console.warn('Failed to update local product sales:', e);
+                setStatus('success');
+
+                // Update local store optimistically (Supabase sales/revenue already updated by /api/finalize-payment)
+                try {
+                    updateProducts(
+                        products.map(p =>
+                            p.id === product.id
+                                ? { ...p, sales: (p.sales ?? 0) + 1, revenue: (p.revenue ?? 0) + product.price }
+                                : p
+                        )
+                    );
+                } catch (e: unknown) {
+                    console.warn('Failed to update local product sales:', e);
+                }
+
+                // Redirecionar para a página de obrigado com detalhes da compra
+                const params = new URLSearchParams({
+                    name: name || '',
+                    product: product.name || '',
+                    amount: String(product.price),
+                    reference: reference,
+                    deliveryLink: product.deliveryLink || '',
+                });
+                window.location.href = `/obrigado?${params.toString()}`;
+            };
+
+            if (result.pending) {
+                let attempts = 0;
+                const pollInterval = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const pollRes = await fetch(`/api/transaction-status?id=${encodeURIComponent(currentTxId)}`);
+                        if (pollRes.ok) {
+                            const { status: txStatus, failureReason } = await pollRes.json();
+                            if (txStatus === 'Concluído') {
+                                clearInterval(pollInterval);
+                                await finalizeModalSale();
+                            } else if (txStatus === 'Falhou') {
+                                clearInterval(pollInterval);
+                                setErrorMessage(failureReason || 'Pagamento não concluído (PIN incorreto, saldo insuficiente ou cancelado). Tente novamente.');
+                                setStatus('idle');
+                            } else if (attempts > 45) {
+                                clearInterval(pollInterval);
+                                const timeoutMsg = 'Tempo esgotado. Não confirmou o PIN no telemóvel a tempo. Tente novamente.';
+                                updateTransactionStatus(currentTxId, 'Falhou', timeoutMsg).catch(() => {});
+                                setErrorMessage(timeoutMsg);
+                                setStatus('idle');
+                            }
+                        } else if (attempts > 45) {
+                            clearInterval(pollInterval);
+                            setErrorMessage('Tempo de espera esgotado. Tente novamente.');
+                            setStatus('idle');
+                        }
+                    } catch {
+                        if (attempts > 45) {
+                            clearInterval(pollInterval);
+                            setErrorMessage('Tempo de espera esgotado. Tente novamente.');
+                            setStatus('idle');
+                        }
+                    }
+                }, 2000);
+                return;
             }
 
-            // Redirecionar para a página de obrigado com detalhes da compra
-            const params = new URLSearchParams({
-                name: name || '',
-
-                product: product.name || '',
-                amount: String(product.price),
-                reference: reference,
-                deliveryLink: product.deliveryLink || '',
-            });
-            window.location.href = `/obrigado?${params.toString()}`;
+            await finalizeModalSale();
 
         } catch (err: unknown) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -280,25 +280,39 @@ export const CheckoutPage = () => {
                     try {
                         const pollRes = await fetch(`/api/transaction-status?id=${encodeURIComponent(currentTxId)}`);
                         if (pollRes.ok) {
-                            const { status: txStatus } = await pollRes.json();
+                            const { status: txStatus, failureReason } = await pollRes.json();
                             if (txStatus === 'Concluído') {
                                 clearInterval(pollInterval);
                                 setPendingMessage(null);
                                 finalizeAndRedirect();
-                            } else if (txStatus === 'Falhou' || attempts > 60) {
+                            } else if (txStatus === 'Falhou') {
                                 clearInterval(pollInterval);
                                 setPendingMessage(null);
-                                setErrorMessage('O pagamento expirou ou foi cancelado no telemóvel. Tente novamente.');
+                                setErrorMessage(failureReason || 'Pagamento não concluído (PIN incorreto, saldo insuficiente ou cancelado). Tente novamente.');
+                                setStatus('idle');
+                            } else if (attempts > 45) {
+                                clearInterval(pollInterval);
+                                setPendingMessage(null);
+                                const timeoutMsg = 'Tempo esgotado. Não confirmou o PIN no telemóvel a tempo. Tente novamente.';
+                                updateTransactionStatus(currentTxId, 'Falhou', timeoutMsg).catch(() => {});
+                                setErrorMessage(timeoutMsg);
                                 setStatus('idle');
                             }
-                        } else if (attempts > 60) {
+                        } else if (attempts > 45) {
+                            clearInterval(pollInterval);
+                            setPendingMessage(null);
+                            const timeoutMsg = 'Tempo de espera esgotado. Verifique o seu telemóvel e tente novamente.';
+                            updateTransactionStatus(currentTxId, 'Falhou', timeoutMsg).catch(() => {});
+                            setErrorMessage(timeoutMsg);
+                            setStatus('idle');
+                        }
+                    } catch {
+                        if (attempts > 45) {
                             clearInterval(pollInterval);
                             setPendingMessage(null);
                             setErrorMessage('Tempo de espera esgotado. Tente novamente.');
                             setStatus('idle');
                         }
-                    } catch {
-                        // ignore poll errors
                     }
                 }, 2000);
                 
@@ -381,8 +395,8 @@ export const CheckoutPage = () => {
 
             // (Movemos isto para dentro de finalizeAndRedirect)
             } // fechar finalizeAndRedirect
-        } catch {
-            setErrorMessage(err.message || 'Ocorreu um erro ao processar a compra. Tente novamente.');
+        } catch (err: any) {
+            setErrorMessage(err?.message || 'Ocorreu um erro ao processar a compra. Tente novamente.');
             setStatus('idle');
 
             // Marca a transação como "Falhou" em vez de ficar pendente ou duplicada

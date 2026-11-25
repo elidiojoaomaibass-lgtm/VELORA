@@ -1,26 +1,89 @@
-function formatGatewayError(data: any): string {
-    const raw = data?.data?.response_description 
-        || data?.message 
-        || data?.error 
-        || (data?.errors ? JSON.stringify(data.errors) : '');
-    const code = data?.data?.response_code || '';
+function extractGatewayCode(data: any): string {
+    return String(
+        data?.data?.response_code ||
+        data?.mpesa_server_response?.output_ResponseCode ||
+        data?.emola_server_response?.output_ResponseCode ||
+        data?.response_code ||
+        data?.output_ResponseCode ||
+        data?.code ||
+        ''
+    ).trim().toUpperCase();
+}
 
-    if (code === 'INS-9' || raw.toLowerCase().includes('timeout')) {
-        return 'O tempo para digitar o PIN no telemóvel expirou (Request timeout). Por favor, tente novamente e digite o PIN assim que a notificação surgir no telemóvel.';
+function formatGatewayError(data: any): string {
+    const raw = String(
+        data?.data?.response_description ||
+        data?.mpesa_server_response?.output_ResponseDesc ||
+        data?.emola_server_response?.output_ResponseDesc ||
+        data?.response_description ||
+        data?.message ||
+        data?.error ||
+        (data?.errors ? JSON.stringify(data.errors) : '') ||
+        ''
+    );
+    const lower = raw.toLowerCase();
+    const code = extractGatewayCode(data);
+
+    // 1. Não colocou PIN / Tempo esgotado
+    if (code === 'INS-9' || lower.includes('timeout') || lower.includes('time out') || lower.includes('expired') || lower.includes('expir')) {
+        return 'Tempo esgotado. Não introduziu o PIN no seu telemóvel a tempo. Tente novamente.';
     }
-    if (code === 'INS-6' || raw.toLowerCase().includes('cancelled') || raw.toLowerCase().includes('cancelada')) {
-        return 'Transação cancelada ou recusada no telemóvel.';
+    // 2. PIN errado / falha de autenticação
+    if (
+        code === 'INS-2051' ||
+        lower.includes('wrong pin') ||
+        lower.includes('invalid pin') ||
+        lower.includes('pin incorreto') ||
+        lower.includes('pin inválido') ||
+        lower.includes('pin invalido') ||
+        lower.includes('incorrect pin') ||
+        lower.includes('authentication failed')
+    ) {
+        return 'PIN incorreto. Verifique o seu PIN do M-Pesa/e-Mola e tente novamente.';
     }
-    if (code === 'INS-2006' || code === 'INS-2001' || raw.toLowerCase().includes('insufficient')) {
-        return 'Saldo insuficiente na sua conta M-Pesa/e-Mola.';
+    // 3. Saldo insuficiente
+    if (
+        code === 'INS-2006' ||
+        code === 'INS-2001' ||
+        lower.includes('insufficient') ||
+        lower.includes('saldo insuficiente') ||
+        lower.includes('not enough balance') ||
+        lower.includes('low balance')
+    ) {
+        return 'Saldo insuficiente na sua conta M-Pesa/e-Mola. Recarregue e tente novamente.';
+    }
+    // 4. Cancelado ou recusado pelo utilizador
+    if (
+        code === 'INS-5' ||
+        code === 'INS-17' ||
+        lower.includes('cancel') ||
+        lower.includes('rejected') ||
+        lower.includes('declined') ||
+        lower.includes('recusad')
+    ) {
+        return 'Pagamento cancelado ou recusado no telemóvel. Tente novamente e confirme o PIN.';
+    }
+    // 5. Falha geral no provedor (ex: INS-6 pode ser saldo insuficiente, PIN errado ou transação recusada no e-Mola/M-Pesa)
+    if (code === 'INS-6' || lower.includes('transaction failed')) {
+        return 'Transação falhou no telemóvel (verifique o saldo, o PIN ou se o pedido foi recusado) e tente novamente.';
+    }
+    // 6. Número inválido / inexistente
+    if (code === 'INS-14' || code === 'INS-2' || code === 'INS-4' || lower.includes('invalid msisdn') || lower.includes('not found')) {
+        return 'Número de telemóvel inválido ou sem conta M-Pesa/e-Mola ativa.';
+    }
+    if (code === 'INS-10' || lower.includes('duplicate')) {
+        return 'Transação duplicada. Aguarde alguns instantes antes de tentar novamente.';
+    }
+    if (code === 'INS-13') {
+        return 'Valor inválido para pagamento.';
     }
     if (code === 'KWK-BLOCKED') {
-        return 'Comunicação temporariamente bloqueada pela Vodacom. Tente novamente em instantes.';
+        return 'Comunicação temporariamente bloqueada pela operadora. Tente novamente em instantes.';
     }
-    if (typeof raw === 'string' && raw.toLowerCase().includes('system internal error')) {
-        return 'Ocorreu um erro interno na rede M-Pesa/Gateway ou tempo de espera esgotado. Verifique o seu telemóvel para confirmar se recebeu o pedido de PIN.';
+    if (lower.includes('system internal error') || code === 'INS-1') {
+        return 'Não foi possível concluir o pagamento (erro ou tempo esgotado no telemóvel). Tente novamente.';
     }
-    return raw || 'Erro no processamento do pagamento.';
+    return raw || 'Pagamento não concluído. Verifique o seu telemóvel e tente novamente.';
 }
 
 export class E2Payments {
@@ -107,9 +170,16 @@ export class E2Payments {
             console.warn('[E2Payments] Falha ao conectar via /api/payment-proxy, tentando /api/kwikpay:', proxyErr);
         }
 
-        // 2. Se /api/payment-proxy falhou na rede ou não respondeu, usar fallback serverless /api/kwikpay
-        if (!response || !response.ok) {
-            console.log('[E2Payments] A tentar endpoint serverless /api/kwikpay...');
+        // 2. Só usar fallback /api/kwikpay se o proxy falhou na rede ou não está disponível (404/502/503)
+        // NÃO reenviar se o gateway já respondeu com erro de transação (400/422/etc.), para não duplicar o pedido de PIN!
+        const shouldFallbackToServerless =
+            !response ||
+            response.status === 404 ||
+            response.status === 502 ||
+            response.status === 503;
+
+        if (shouldFallbackToServerless) {
+            console.log('[E2Payments] Proxy indisponível, tentando endpoint serverless /api/kwikpay...');
             try {
                 const kwikpayRes = await fetch('/api/kwikpay', {
                     method: 'POST',
@@ -124,8 +194,7 @@ export class E2Payments {
                         clientSecret: this.clientSecret,
                     })
                 });
-                // Se o kwikpay responder com ok ou com dados válidos, usamos esta resposta
-                if (kwikpayRes.ok || !response) {
+                if (kwikpayRes.ok || !response || response.status === 404) {
                     response = kwikpayRes;
                 }
             } catch (serverlessErr) {
@@ -142,19 +211,32 @@ export class E2Payments {
         console.log(`[E2Payments] C2B Status: ${response.status}`);
         console.log(`[E2Payments] C2B Body: ${rawText}`);
 
-        let data = null;
+        let data: any = null;
         try {
             data = rawText ? JSON.parse(rawText) : null;
         } catch {
             console.warn('[E2Payments] Failed to parse JSON body');
         }
 
-        if (!response.ok || (data && data.success === false)) {
-            // Timeout real da gateway enquanto aguarda PIN no telemóvel:
-            const isGatewayTimeout = response.status === 504 || rawText.toLowerCase().includes('gateway timeout') || rawText.toLowerCase().includes('request timeout');
+        const gatewayCode = extractGatewayCode(data);
+        const hasGatewayErrorCode = Boolean(gatewayCode && gatewayCode !== 'INS-0' && gatewayCode !== '0' && gatewayCode !== '00' && gatewayCode !== '200');
+        const isExplicitFailure = Boolean(
+            (data && data.success === false) ||
+            (data && (data.status === 'failed' || data.status === 'error' || data.status === 'cancelled')) ||
+            hasGatewayErrorCode
+        );
 
-            if (isGatewayTimeout) {
-                console.log('Timeout da Gateway atingido. O pedido foi enviado; aguardando PIN no telemóvel...');
+        if (!response.ok || isExplicitFailure) {
+            // Apenas tratar como pendente se for timeout da infraestrutura/proxy (504 sem resposta JSON do gateway)
+            const isInfraGatewayTimeout =
+                response.status === 504 &&
+                !data?.data?.response_code &&
+                !data?.mpesa_server_response &&
+                !data?.emola_server_response &&
+                !hasGatewayErrorCode;
+
+            if (isInfraGatewayTimeout) {
+                console.log('Timeout de proxy (504) atingido. Aguardar confirmação via webhook...');
                 return { success: true, pending: true, message: 'A aguardar confirmação no telemóvel...' };
             }
             throw new Error(formatGatewayError(data || { error: rawText }));

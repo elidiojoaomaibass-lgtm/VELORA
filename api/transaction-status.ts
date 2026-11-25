@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, status, amount, method')
+      .select('id, status, amount, method, failurereason')
       .eq('id', id)
       .maybeSingle();
 
@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(200).json({ status: data?.status || null, data });
+    return res.status(200).json({ status: data?.status || null, failureReason: data?.failurereason || null, data });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
