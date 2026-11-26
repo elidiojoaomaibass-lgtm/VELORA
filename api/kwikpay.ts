@@ -87,6 +87,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Reference must not contain spaces and be <= 20 characters
     const cleanRef = String(reference || `ORD${Date.now()}`).replace(/\s+/g, '_').slice(0, 20);
 
+    // Determine callback URL so the gateway can notify us asynchronously
+    // even if this serverless function expires before the user enters PIN
+    const appUrl =
+      process.env.APP_URL ||
+      process.env.VERCEL_URL ||
+      (req.headers.host ? `https://${req.headers.host}` : '');
+    const callbackUrl = appUrl ? `${appUrl.replace(/\/$/, '')}/api/webhook` : '';
+
     const baseUrlFormatted = c2bBaseUrl.includes('/v1/c2b')
       ? c2bBaseUrl.replace(/\/$/, '')
       : (c2bBaseUrl.includes('/v1') ? `${c2bBaseUrl.replace(/\/$/, '')}/c2b` : 'https://mpesaemolatech.com/v1/c2b');
@@ -104,6 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount: Number(amount),
         phone: cleanPhone,
         reference: cleanRef,
+        ...(callbackUrl ? { callback_url: callbackUrl } : {}),
       }),
     });
 

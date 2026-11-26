@@ -72,19 +72,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('Webhook Received:', JSON.stringify(payload, null, 2));
 
     // Webhook structure support + fallback for other formats
-    const status = payload.status || payload.event;
-    const transaction_id = payload.txid || payload.transaction_id || payload.id || payload.transactionId;
+    // The gateway may send: { txid, status, reference, amount, phone, ... }
+    // or its own emola/mpesa response format
+    const rawStatus = payload.status || payload.event || payload.output_ResponseCode || '';
+    const status = String(rawStatus).toLowerCase();
+    const transaction_id = payload.txid || payload.transaction_id || payload.id || payload.transactionId || payload.reference;
     const reference = payload.reference || transaction_id;
-    const amount = payload.valor_bruto || payload.amount;
-    const phone = payload.pagador || payload.phone;
-    const customerName = payload.nome_pagador || payload.customerName || 'Cliente';
-    const method = payload.canal === 'emola' ? 'e-Mola' : (payload.canal === 'mpesa' ? 'M-Pesa' : payload.method);
+    const amount = payload.valor_bruto || payload.amount || payload.valor;
+    const phone = payload.pagador || payload.phone || payload.msisdn;
+    const customerName = payload.nome_pagador || payload.customerName || payload.name || 'Cliente';
+    const rawMethod = payload.canal || payload.method || payload.provider || '';
+    const method = rawMethod === 'emola' ? 'e-Mola' : (rawMethod === 'mpesa' ? 'M-Pesa' : rawMethod);
 
     if (!transaction_id) {
       return res.status(400).setHeader('Access-Control-Allow-Origin', '*').json({ error: 'Missing txid / transaction_id' });
     }
 
-    const isSuccess = (status === 'success' || status === 'payment.success' || String(status).toUpperCase() === 'CONCLUÍDO');
+    // Detect success from multiple possible gateway response shapes
+    const isSuccess = (
+      status === 'success' ||
+      status === 'payment.success' ||
+      status === 'completed' ||
+      status === 'concluído' ||
+      status === 'concluido' ||
+      status === 'approved' ||
+      status === 'confirmed' ||
+      status === 'ins-0' ||
+      status === '0' ||
+      payload.output_ResponseCode === 'INS-0' ||
+      payload.output_ResponseCode === '0' ||
+      payload.emola_response === 'success' ||
+      payload.mpesa_response === 'success' ||
+      payload.output_TransactionID !== undefined // gateway returned a transaction ID = success
+    );
     const finalStatus = isSuccess ? 'Concluído' : 'Falhou';
 
     console.log(`Upsert transação ${transaction_id} -> status: ${finalStatus}`);
