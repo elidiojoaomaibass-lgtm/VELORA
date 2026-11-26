@@ -253,9 +253,12 @@ export const CheckoutPage = () => {
 
         try {
             const e2p = new E2Payments();
-            const walletId = method === 'mpesa'
+            const rawWalletId = method === 'mpesa'
                 ? (import.meta.env.VITE_PAYMENT_WALLET_MPESA || import.meta.env.VITE_PAYMENT_WALLET_ID || import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_MPESA || '807267')
                 : (import.meta.env.VITE_PAYMENT_WALLET_EMOLA || import.meta.env.VITE_PAYMENT_WALLET_ID || import.meta.env.VITE_KWIKPAY_WALLET_ID || import.meta.env.VITE_E2_WALLET_EMOLA || '257096');
+            const walletId = rawWalletId === '891ae33d-664c-4715-abb1-008688662a03'
+                ? (method === 'mpesa' ? '807267' : '257096')
+                : rawWalletId;
 
             const result = await e2p.c2bPayment(
                 method,
