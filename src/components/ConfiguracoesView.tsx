@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Lock, Bell, Shield, LogOut, AlertCircle, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getUserSettings, saveUserSettings } from '../lib/userSettings';
+import { getUserSettings, saveUserSettings, getActiveUserEmail } from '../lib/userSettings';
 import { requestPermissionAndStoreToken } from '../lib/firebase';
+import { sendLocalNotification } from '../lib/store';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
@@ -24,6 +25,11 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(() =>
+        typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported'
+    );
+    const [activatingPush, setActivatingPush] = useState(false);
+    const [testingPush, setTestingPush] = useState(false);
 
 
     useEffect(() => {
@@ -169,6 +175,55 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
         }
     };
 
+    const handleActivatePush = async () => {
+        setActivatingPush(true);
+        setMessage(null);
+        try {
+            const email = user?.email || (await getActiveUserEmail()) || undefined;
+            const res = await requestPermissionAndStoreToken(email);
+            setNotifPermission(res.permission);
+            if (res.ok) {
+                setMessage({ type: 'success', text: 'Notificações Push ativadas e sincronizadas neste dispositivo!' });
+            } else {
+                setMessage({ type: 'error', text: res.reason || 'Não foi possível ativar as notificações push.' });
+            }
+        } catch (err: unknown) {
+            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao ativar notificações.' });
+        } finally {
+            setActivatingPush(false);
+        }
+    };
+
+    const handleTestPush = async () => {
+        setTestingPush(true);
+        setMessage(null);
+        try {
+            const email = user?.email || (await getActiveUserEmail());
+            sendLocalNotification('🎉 Venda aprovada!', {
+                body: 'Venda de 97 MT via M-Pesa',
+                icon: '/logo.png'
+            });
+            if (email) {
+                await fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        merchant_user_email: email,
+                        amount: 97,
+                        method: 'M-Pesa',
+                        title: '🎉 Venda aprovada!',
+                        body: 'Venda de 97 MT via M-Pesa',
+                    })
+                }).catch(() => {});
+            }
+            setMessage({ type: 'success', text: 'Notificação de teste enviada para este dispositivo!' });
+        } catch (err: unknown) {
+            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao testar notificação.' });
+        } finally {
+            setTestingPush(false);
+        }
+    };
+
     return (
         <div className="px-4 md:px-8 pt-2 md:pt-4 pb-20 space-y-6 md:space-y-8 w-full max-w-none mx-auto transition-all duration-700">
             {/* Header */}
@@ -204,7 +259,7 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
                         { id: 'profile', label: 'Perfil', icon: User },
 
                         { id: 'security', label: 'Segurança', icon: Lock },
-                        { id: 'notifications', label: 'Avisos', icon: Bell },
+                        { id: 'notifications', label: 'Notificações', icon: Bell },
                     ].map((item) => (
                         <button
                             key={item.id}
@@ -413,9 +468,47 @@ export const ConfiguracoesView = ({ onLogout }: { onLogout: () => void }) => {
                                     <div className="h-16 w-16 bg-emerald-50 dark:bg-brand-800 rounded-full flex items-center justify-center mx-auto text-emerald-600">
                                         <Bell size={32} />
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Alertas do Sistema</h3>
-                                    <p className="text-xs text-slate-400 max-w-xs mx-auto">Você receberá notificações sobre novas vendas, saques e atualizações de segurança.</p>
-                                    <button className="text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100 px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors">Gerenciar Preferências</button>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <h3 className="text-lg font-black text-slate-900 dark:text-white">Notificações Push</h3>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                            notifPermission === 'granted'
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800'
+                                                : notifPermission === 'denied'
+                                                    ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950 dark:border-red-800'
+                                                    : 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950 dark:border-amber-800'
+                                        }`}>
+                                            {notifPermission === 'granted' ? 'Ativo' : notifPermission === 'denied' ? 'Bloqueado' : notifPermission === 'unsupported' ? 'Não suportado' : 'Inativo'}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                                        Ative as notificações push neste dispositivo para receber alertas instantâneos de novas vendas, falhas e saques.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleActivatePush}
+                                            disabled={activatingPush || notifPermission === 'unsupported'}
+                                            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                            {activatingPush ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+                                            {activatingPush
+                                                ? 'A ativar...'
+                                                : notifPermission === 'granted'
+                                                    ? 'Reativar neste Dispositivo'
+                                                    : 'Ativar Notificações Push'}
+                                        </button>
+                                        {notifPermission === 'granted' && (
+                                            <button
+                                                type="button"
+                                                onClick={handleTestPush}
+                                                disabled={testingPush}
+                                                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-emerald-200 dark:border-brand-700 text-emerald-600 dark:text-emerald-400 text-xs font-black uppercase tracking-widest hover:bg-emerald-50 dark:hover:bg-brand-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                            >
+                                                {testingPush ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />}
+                                                Testar Notificação
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/20 text-left max-h-96 overflow-y-auto custom-scrollbar">
