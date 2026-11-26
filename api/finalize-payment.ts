@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { sendPushNotificationV1, getUserTokens } from './_push.js';
+import { sendPushNotificationV1, getUserTokens, buildWebhookRequest } from './_push.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
@@ -283,6 +283,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // ── Fire notifications ──────────────────────────────────────────────
         const notifications: Promise<any>[] = [];
+        let webhookStatus: number | null = null;
+        let pushTokensFound = 0;
+        let pushSentCount = 0;
 
         // 1. Pushcut Global
         const pushcutEndpoint = process.env.VITE_PUSHCUT_ENDPOINT || process.env.PUSHCUT_ENDPOINT || '';
@@ -307,10 +310,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const val = amountNum.toLocaleString('pt-PT');
               const notifTitle = '🎉 Venda aprovada!';
               const notifText = `Venda de ${val} MT via ${providerStr}`;
+              const { url: targetWebhookUrl, headers: targetWebhookHeaders } = buildWebhookRequest(finalWebhookUrl);
 
-              const r = await fetch(finalWebhookUrl, {
+              const r = await fetch(targetWebhookUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: targetWebhookHeaders,
                 body: JSON.stringify({
                   title: notifTitle,
                   text: notifText,
@@ -324,6 +328,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   status: 'Concluído',
                 }),
               });
+              webhookStatus = r.status;
               const resText = await r.text().catch(() => '');
               console.log('Merchant Webhook:', r.status, resText.slice(0, 100));
             } catch (e: any) {
@@ -364,9 +369,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             notifications.push((async () => {
                 try {
                 const tokens = await getUserTokens(finalMerchantEmail);
+                pushTokensFound = tokens?.length || 0;
                 if (tokens && tokens.length > 0) {
                     const val = amountNum.toLocaleString('pt-PT');
-                    await Promise.allSettled(
+                    const results = await Promise.allSettled(
                         tokens.map((token) =>
                             sendPushNotificationV1(token, {
                                 title: '🎉 Venda aprovada!',
@@ -374,7 +380,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             })
                         )
                     );
-                    console.log(`FCM Push Notifications disparadas para ${tokens.length} dispositivos.`);
+                    pushSentCount = results.filter((r) => r.status === 'fulfilled' && r.value === true).length;
+                    console.log(`FCM Push Notifications disparadas para ${pushSentCount}/${tokens.length} dispositivos.`);
                 } else {
                     console.log(`FCM: Nenhum token de push encontrado para ${finalMerchantEmail}.`);
                 }
@@ -390,6 +397,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         await Promise.allSettled(notifications);
         console.log('Todas as notificações processadas.');
+        return res.status(200).json({
+          success: true,
+          transactionId: finalTxId,
+          message: 'Payment finalized successfully!',
+          diagnostics: {
+            hasServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY),
+            hasFirebaseAdmin: Boolean(process.env.FIREBASE_SERVICE_ACCOUNT || process.env.GOOGLE_APPLICATION_CREDENTIALS),
+            merchantEmail: finalMerchantEmail,
+            webhookFound: Boolean(finalWebhookUrl),
+            webhookStatus,
+            pushTokensFound,
+            pushSentCount,
+          },
+        });
       } catch (dbErr) {
         console.error('Erro ao salvar transação/disparar notificações:', dbErr);
       }

@@ -100,6 +100,21 @@ export async function sendPushNotificationV1(
   }
 }
 
+export function buildWebhookRequest(rawUrl: string): {
+  url: string;
+  headers: Record<string, string>;
+} {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const match = rawUrl.match(/^https:\/\/api\.pushcut\.io\/([^/]+)\/notifications\/(.+)$/);
+  if (match && match[1] !== 'v1') {
+    return {
+      url: `https://api.pushcut.io/v1/notifications/${match[2]}`,
+      headers: { ...headers, 'API-Key': match[1] },
+    };
+  }
+  return { url: rawUrl, headers };
+}
+
 export async function getUserTokens(userEmail: string): Promise<string[]> {
   try {
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';

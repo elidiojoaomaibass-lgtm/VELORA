@@ -2,7 +2,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
-import { sendPushNotificationV1, getUserTokens } from './_push.js';
+import { sendPushNotificationV1, getUserTokens, buildWebhookRequest } from './_push.js';
 
 export const config = {
   api: {
@@ -340,10 +340,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const methodStr = method || 'Gateway';
               const notifTitle = isSuccess ? '🎉 Venda aprovada!' : '⚠️ Venda falhada';
               const notifText = isSuccess ? `Venda de ${val} MT via ${methodStr}` : `Transação de ${val} MT falhou.`;
+              const { url: targetWebhookUrl, headers: targetWebhookHeaders } = buildWebhookRequest(merchantWebhookUrl);
 
-              await fetch(merchantWebhookUrl, {
+              await fetch(targetWebhookUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: targetWebhookHeaders,
                 body: JSON.stringify({
                   title: notifTitle,
                   text: notifText,
