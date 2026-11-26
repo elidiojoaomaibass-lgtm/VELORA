@@ -286,6 +286,8 @@ export default defineConfig(({ mode }) => {
           target: 'https://mpesaemolatech.com',
           changeOrigin: true,
           secure: false,
+          timeout: 90000,
+          proxyTimeout: 90000,
           rewrite: (path) => path.replace(/^\/api\/payment-proxy/, '')
         }
       }

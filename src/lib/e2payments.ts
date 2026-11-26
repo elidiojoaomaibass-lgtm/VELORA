@@ -11,6 +11,7 @@ function extractGatewayCode(data: any): string {
 }
 
 function formatGatewayError(data: any): string {
+    // Also read emola_response / mpesa_response fields returned directly by the gateway
     const raw = String(
         data?.data?.response_description ||
         data?.mpesa_server_response?.output_ResponseDesc ||
@@ -21,11 +22,27 @@ function formatGatewayError(data: any): string {
         (data?.errors ? JSON.stringify(data.errors) : '') ||
         ''
     );
-    const lower = raw.toLowerCase();
+    // Merge emola_response into lower for matching
+    const rawWithEmola = raw + ' ' + (data?.emola_response || data?.mpesa_response || '');
+    const lower = rawWithEmola.toLowerCase();
     const code = extractGatewayCode(data);
 
-    // 1. Não colocou PIN / Tempo esgotado
-    if (code === 'INS-9' || lower.includes('timeout') || lower.includes('time out') || lower.includes('expired') || lower.includes('expir')) {
+    // 0. Número de telemóvel inválido (422 com errors.phone do gateway)
+    if (data?.errors?.phone) {
+        const phoneErr = Array.isArray(data.errors.phone) ? data.errors.phone[0] : String(data.errors.phone);
+        return `Número inválido: ${phoneErr}`;
+    }
+    // 1. Não colocou PIN / Tempo esgotado (inclui "Customer did not enter PIN" do gateway e-Mola)
+    if (
+        code === 'INS-9' ||
+        lower.includes('timeout') ||
+        lower.includes('time out') ||
+        lower.includes('expired') ||
+        lower.includes('expir') ||
+        lower.includes('did not enter pin') ||
+        lower.includes('did not enter') ||
+        lower.includes('customer did not')
+    ) {
         return 'Tempo esgotado. Não introduziu o PIN no seu telemóvel a tempo. Tente novamente.';
     }
     // 2. PIN errado / falha de autenticação
@@ -235,9 +252,21 @@ export class E2Payments {
                 !data?.emola_server_response &&
                 !hasGatewayErrorCode;
 
+            // Tratar como pendente se o gateway iniciou o pagamento (enviou pedido PIN ao telemóvel)
+            // mas o utilizador não entrou o PIN a tempo (HTTP 400 com emola_response/mpesa_response)
+            // O pedido de PIN JÁ FOI enviado → não repetir; mostrar mensagem de timeout
+            const isGatewayPinTimeout =
+                (response.status === 400 || response.status === 408 || response.status === 504) &&
+                (data?.emola_response || data?.mpesa_response);
+
             if (isInfraGatewayTimeout) {
                 console.log('Timeout de proxy (504) atingido. Aguardar confirmação via webhook...');
                 return { success: true, pending: true, message: 'A aguardar confirmação no telemóvel...' };
+            }
+            if (isGatewayPinTimeout) {
+                console.log('[E2Payments] Gateway enviou pedido PIN mas utilizador não respondeu a tempo.');
+                // Lançar erro com mensagem amigável de timeout
+                throw new Error(formatGatewayError(data));
             }
             throw new Error(formatGatewayError(data || { error: rawText }));
         }
