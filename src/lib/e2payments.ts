@@ -160,45 +160,68 @@ export class E2Payments {
         }
         cleanPhone = cleanPhone.slice(-9);
 
-        // Always use the robust serverless endpoint instead of the edge proxy in production.
-        // The serverless function has maxDuration 60s configured (only works in Pro).
-        // For local development (Vite), we must use the Vite proxy.
         let response: Response | null = null;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-        // 1. Tentar primeiro via /api/payment-proxy (Edge rewrite direto na Vercel e Vite, sem timeout de 10s de serverless)
-        try {
-            console.log(`[E2Payments] A iniciar pagamento ${method} para ${cleanPhone} via /api/payment-proxy...`);
-            const token = await this.authenticate();
-            response = await fetch(`/api/payment-proxy/v1/c2b/${method}-payment/${walletId}`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    client_id: this.clientId,
-                    amount: Number(amount),
-                    phone: cleanPhone,
-                    reference: cleanRef
-                })
-            });
-        } catch (proxyErr) {
-            console.warn('[E2Payments] Falha ao conectar via /api/payment-proxy, tentando /api/kwikpay:', proxyErr);
-        }
-
-        // 2. Só usar fallback /api/kwikpay se o proxy falhou na rede ou não está disponível (404/502/503)
-        // NÃO reenviar se o gateway já respondeu com erro de transação (400/422/etc.), para não duplicar o pedido de PIN!
-        const shouldFallbackToServerless =
-            !response ||
-            response.status === 404 ||
-            response.status === 502 ||
-            response.status === 503;
-
-        if (shouldFallbackToServerless) {
-            console.log('[E2Payments] Proxy indisponível, tentando endpoint serverless /api/kwikpay...');
+        if (isLocalhost) {
+            // Localhost: Vite proxy suporta timeout de 90s direto
             try {
-                const kwikpayRes = await fetch('/api/kwikpay', {
+                console.log(`[E2Payments] A iniciar pagamento ${method} para ${cleanPhone} via /api/payment-proxy...`);
+                const token = await this.authenticate();
+                response = await fetch(`/api/payment-proxy/v1/c2b/${method}-payment/${walletId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        client_id: this.clientId,
+                        amount: Number(amount),
+                        phone: cleanPhone,
+                        reference: cleanRef
+                    })
+                });
+            } catch (proxyErr) {
+                console.warn('[E2Payments] Falha ao conectar via /api/payment-proxy, tentando /api/kwikpay:', proxyErr);
+            }
+
+            const shouldFallbackToServerless =
+                !response ||
+                response.status === 404 ||
+                response.status === 502 ||
+                response.status === 503;
+
+            if (shouldFallbackToServerless) {
+                console.log('[E2Payments] Proxy indisponível, tentando endpoint serverless /api/kwikpay...');
+                try {
+                    const kwikpayRes = await fetch('/api/kwikpay', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            method,
+                            walletId,
+                            amount: Number(amount),
+                            phone: cleanPhone,
+                            reference: cleanRef,
+                            clientId: this.clientId,
+                            clientSecret: this.clientSecret,
+                        })
+                    });
+                    if (kwikpayRes.ok || !response || response.status === 404) {
+                        response = kwikpayRes;
+                    }
+                } catch (serverlessErr) {
+                    console.error('[E2Payments] Erro no fallback /api/kwikpay:', serverlessErr);
+                }
+            }
+        } else {
+            // Produção (Vercel): usar /api/kwikpay com maxDuration=60s (Edge rewrite corta aos ~25s antes do PIN)
+            try {
+                console.log(`[E2Payments] A iniciar pagamento ${method} para ${cleanPhone} via /api/kwikpay (60s)...`);
+                response = await fetch('/api/kwikpay', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -211,11 +234,40 @@ export class E2Payments {
                         clientSecret: this.clientSecret,
                     })
                 });
-                if (kwikpayRes.ok || !response || response.status === 404) {
-                    response = kwikpayRes;
-                }
             } catch (serverlessErr) {
-                console.error('[E2Payments] Erro no fallback /api/kwikpay:', serverlessErr);
+                console.warn('[E2Payments] Falha ao conectar via /api/kwikpay, tentando /api/payment-proxy:', serverlessErr);
+            }
+
+            const shouldFallbackToProxy =
+                !response ||
+                response.status === 404 ||
+                response.status === 502 ||
+                response.status === 503;
+
+            if (shouldFallbackToProxy) {
+                console.log('[E2Payments] /api/kwikpay indisponível, tentando /api/payment-proxy...');
+                try {
+                    const token = await this.authenticate();
+                    const proxyRes = await fetch(`/api/payment-proxy/v1/c2b/${method}-payment/${walletId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            client_id: this.clientId,
+                            amount: Number(amount),
+                            phone: cleanPhone,
+                            reference: cleanRef
+                        })
+                    });
+                    if (proxyRes.ok || !response || response.status === 404) {
+                        response = proxyRes;
+                    }
+                } catch (proxyErr) {
+                    console.error('[E2Payments] Erro no fallback /api/payment-proxy:', proxyErr);
+                }
             }
         }
 

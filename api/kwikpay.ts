@@ -107,8 +107,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    const paymentData = await paymentRes.json().catch(() => ({}));
-    console.log('Payment Gateway C2B Result:', JSON.stringify(paymentData, null, 2));
+    const rawText = await paymentRes.text().catch(() => '');
+    let paymentData: any = {};
+    try {
+      paymentData = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      paymentData = { raw: rawText };
+    }
+    console.log('Payment Gateway C2B Result:', paymentRes.status, JSON.stringify(paymentData, null, 2));
     return res.status(paymentRes.status).json(paymentData);
 
   } catch (error: any) {
