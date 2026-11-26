@@ -40,14 +40,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const notifTitle = title || '🎉 Venda aprovada!';
         const notifBody = customBody || `Venda de ${val} MT via ${methodStr}`;
 
-        let successCount = 0;
-        for (const token of tokens) {
-          const ok = await sendPushNotificationV1(token, {
-            title: notifTitle,
-            body: notifBody,
-          });
-          if (ok) successCount++;
-        }
+        const resultsArr = await Promise.allSettled(
+          tokens.map((token) =>
+            sendPushNotificationV1(token, {
+              title: notifTitle,
+              body: notifBody,
+            })
+          )
+        );
+        const successCount = resultsArr.filter(
+          (r) => r.status === 'fulfilled' && r.value === true
+        ).length;
         results.push(`FCM: ${successCount}/${tokens.length} dispositivo(s) notificado(s).`);
       } else {
         results.push('FCM: Nenhum token de push encontrado para esta conta.');

@@ -64,23 +64,41 @@ export const storeFcmToken = async (uidOrEmail: string, token: string) => {
  * Solicita permissão de notificação ao navegador, obtém o token FCM e o armazena no Supabase.
  * Se um email de usuário for fornecido, o token será associado a esse usuário.
  */
-export const requestPermissionAndStoreToken = async (email?: string): Promise<void> => {
+export const requestPermissionAndStoreToken = async (
+  email?: string
+): Promise<{ ok: boolean; permission: NotificationPermission | 'unsupported'; reason?: string }> => {
   if (typeof window === 'undefined' || !('Notification' in window)) {
-    return;
+    return { ok: false, permission: 'unsupported', reason: 'Este navegador não suporta notificações push.' };
   }
 
-  // Solicita permissão ao navegador
+  // Solicita permissão ao navegador (deve ser chamado a partir de um clique no iOS)
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    console.warn('Permissão de notificação não concedida');
-    return;
+    console.warn('Permissão de notificação não concedida:', permission);
+    return {
+      ok: false,
+      permission,
+      reason: permission === 'denied'
+        ? 'Notificações bloqueadas nas definições do navegador/dispositivo.'
+        : 'Permissão de notificação não concedida.'
+    };
+  }
+
+  // Registar explicitamente o Service Worker do Firebase Messaging antes de pedir o token
+  let registration: ServiceWorkerRegistration | undefined;
+  if ('serviceWorker' in navigator) {
+    try {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+    } catch (swErr) {
+      console.warn('Aviso ao registar /firebase-messaging-sw.js:', swErr);
+    }
   }
 
   // Obtém o token FCM
-  const token = await getFcmToken();
+  const token = await getFcmToken(registration);
   if (!token) {
     console.warn('Falha ao obter token FCM');
-    return;
+    return { ok: false, permission, reason: 'Não foi possível gerar o token FCM neste dispositivo.' };
   }
 
   // Armazena o token para o usuário ativo
@@ -90,5 +108,7 @@ export const requestPermissionAndStoreToken = async (email?: string): Promise<vo
   } else {
     localStorage.setItem('fcm_token', token);
   }
+
+  return { ok: true, permission };
 };
 

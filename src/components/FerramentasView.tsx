@@ -49,6 +49,28 @@ export const FerramentasView = () => {
     const [whatsappToken, setWhatsappToken] = useState(() => localStorage.getItem('velora_whatsapp_token') || '');
     const [klaviyoToken, setKlaviyoToken] = useState(() => localStorage.getItem('velora_klaviyo_token') || '');
     const [testPushValue, setTestPushValue] = useState('97,00');
+    const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(() =>
+        typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported'
+    );
+    const [activatingPush, setActivatingPush] = useState(false);
+
+    const handleActivatePush = async () => {
+        setActivatingPush(true);
+        try {
+            const email = await getActiveUserEmail();
+            const res = await requestPermissionAndStoreToken(email || undefined);
+            setNotifPermission(res.permission);
+            if (res.ok) {
+                toast.success('Notificações Push ativadas neste dispositivo!');
+            } else {
+                toast.error(res.reason || 'Não foi possível ativar as notificações.');
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Erro ao ativar notificações push.');
+        } finally {
+            setActivatingPush(false);
+        }
+    };
 
     const [userEmail, setUserEmail] = useState<string>('');
 
@@ -889,8 +911,15 @@ export const FerramentasView = () => {
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Alertas Nativos</p>
                             </div>
                         </div>
-                        <div className="px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-950 text-pink-600 text-[10px] font-black uppercase tracking-widest border border-pink-100 dark:border-pink-900/30">
-                            Ativo
+                        <div className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                            notifPermission === 'granted'
+                                ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 border-emerald-100 dark:border-emerald-900/30"
+                                : notifPermission === 'denied'
+                                    ? "bg-red-50 dark:bg-red-950 text-red-600 border-red-100 dark:border-red-900/30"
+                                    : "bg-amber-50 dark:bg-amber-950 text-amber-600 border-amber-100 dark:border-amber-900/30"
+                        )}>
+                            {notifPermission === 'granted' ? 'Ativo' : notifPermission === 'denied' ? 'Bloqueado' : 'Inativo'}
                         </div>
                     </div>
 
@@ -899,11 +928,30 @@ export const FerramentasView = () => {
                             <Info size={14} className="text-pink-500 shrink-0 mt-0.5" />
                             <p className="text-[10px] leading-snug text-slate-500 font-medium italic">
                                 Receba alertas instantâneos de vendas e levantamentos diretamente no seu dispositivo.
+                                {notifPermission !== 'granted' && ' Clique em "Ativar neste Dispositivo" para autorizar os alertas.'}
                             </p>
                         </div>
                     </div>
 
                     <div className="pt-2 space-y-3">
+                        <button
+                            type="button"
+                            onClick={handleActivatePush}
+                            disabled={activatingPush}
+                            className={cn(
+                                "w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2.5",
+                                notifPermission === 'granted'
+                                    ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100"
+                                    : "bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-lg active:scale-[0.98]"
+                            )}
+                        >
+                            <Bell size={16} />
+                            {activatingPush
+                                ? 'A ativar...'
+                                : notifPermission === 'granted'
+                                    ? 'Reativar / Sincronizar Dispositivo'
+                                    : 'Ativar neste Dispositivo'}
+                        </button>
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor do Teste</label>
                             <div className="relative">

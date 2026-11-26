@@ -273,7 +273,7 @@ function App() {
     if (!session) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unsubscribe = onFcmMessage((payload: any) => {
-      const title = payload?.notification?.title || 'VELORA — Nova Venda! 🎉';
+      const title = payload?.notification?.title || '🎉 Venda aprovada!';
       const body = payload?.notification?.body || '';
       // Show browser notification even when app is in foreground
       if (Notification.permission === 'granted') {
@@ -281,6 +281,7 @@ function App() {
           body,
           icon: '/logo.png',
           image: '/logo.png',
+          tag: payload?.messageId || 'velora-fcm',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
       }

@@ -366,12 +366,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const tokens = await getUserTokens(finalMerchantEmail);
                 if (tokens && tokens.length > 0) {
                     const val = amountNum.toLocaleString('pt-PT');
-                    for (const token of tokens) {
-                        await sendPushNotificationV1(token, {
-                            title: '🎉 Venda aprovada!',
-                            body: `Venda de ${val} MT via ${providerStr}`,
-                        });
-                    }
+                    await Promise.allSettled(
+                        tokens.map((token) =>
+                            sendPushNotificationV1(token, {
+                                title: '🎉 Venda aprovada!',
+                                body: `Venda de ${val} MT via ${providerStr}`,
+                            })
+                        )
+                    );
                     console.log(`FCM Push Notifications disparadas para ${tokens.length} dispositivos.`);
                 } else {
                     console.log(`FCM: Nenhum token de push encontrado para ${finalMerchantEmail}.`);
